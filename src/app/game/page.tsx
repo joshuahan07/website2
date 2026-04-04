@@ -104,7 +104,17 @@ export default function GamePage() {
     }
 
     socket.on(S2C.GAME_STATE, (state: ClientGameState) => {
-      setGameState(state);
+      // Detect opponent's move from new move log entries
+      setGameState(prev => {
+        if (prev && state.moveLog.length > (prev.moveLog?.length || 0)) {
+          const latestMove = state.moveLog[state.moveLog.length - 1];
+          if (latestMove && latestMove.player !== myPlayer.current) {
+            setLastMove({ from: latestMove.from, to: latestMove.to });
+            setTimeout(() => setLastMove(null), 2000);
+          }
+        }
+        return state;
+      });
       setError(null);
       if (state.roomTheme && (state.roomTheme === 'kingdom' || state.roomTheme === 'pirate' || state.roomTheme === 'greek')) {
         setThemeId(state.roomTheme as any);
@@ -122,16 +132,17 @@ export default function GamePage() {
         revealTimerRef.current = null;
       }
 
-      // Delay the battle popup so the piece slide/arrow shows first
-      const showDelay = 800;
+      // Delay the battle popup so the piece slide/arrow plays out fully first
+      // Slide = 400ms, arrow = 1100ms, plus render buffer
+      const showDelay = 1500;
 
-      const squares = new Set<string>();
-      for (const p of event.pieces) {
-        squares.add(`${p.position.row},${p.position.col}`);
-      }
-      setRevealingSquares(squares);
-
+      // Show the battle card and revealing squares together after the delay
       setTimeout(() => {
+        const squares = new Set<string>();
+        for (const p of event.pieces) {
+          squares.add(`${p.position.row},${p.position.col}`);
+        }
+        setRevealingSquares(squares);
         setRevealEvent(event);
       }, showDelay);
 
@@ -468,6 +479,62 @@ export default function GamePage() {
             isMyTurn={isMyTurn}
             myNickname={gameState.myNickname}
             opponentNickname={gameState.opponentNickname}
+            setupOverlay={gameState.phase === 'setup' ? (
+              <div className="bg-stone-950/92 backdrop-blur-md border border-stone-700/60 rounded-2xl p-4 shadow-2xl"
+                style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-base font-bold text-amber-400 tracking-wide">
+                      {theme.flavor.setupTitle}
+                    </h2>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      Select a piece, then click your rows to place
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold tabular-nums text-stone-300">
+                      {setupPieces.length}<span className="text-stone-500">/{TOTAL_PIECES}</span>
+                    </span>
+                    <svg className="w-8 h-8 -rotate-90" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="#292524" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="#f59e0b" strokeWidth="3"
+                        strokeDasharray={`${(setupPieces.length / TOTAL_PIECES) * 94.2} 94.2`}
+                        strokeLinecap="round"
+                        className="transition-all duration-300"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <SetupTray
+                  selectedRank={selectedRank}
+                  onSelectRank={setSelectedRank}
+                  placedCounts={placedCounts}
+                  isReady={isReady}
+                />
+                <div className="flex gap-2 items-center mt-3">
+                  <button onClick={handleAutoPlace} disabled={isReady}
+                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 rounded-lg text-xs font-medium disabled:opacity-40 transition-colors border border-stone-700/50">
+                    Auto-Place
+                  </button>
+                  <button onClick={() => { setSetupPieces([]); setSelectedRank(null); }} disabled={isReady}
+                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 rounded-lg text-xs font-medium disabled:opacity-40 transition-colors border border-stone-700/50">
+                    Clear
+                  </button>
+                  <button onClick={handleReady} disabled={setupPieces.length !== TOTAL_PIECES || isReady}
+                    className={`flex-[1.5] py-1.5 rounded-lg font-bold text-sm transition-all ${
+                      isReady ? 'bg-green-900/60 text-green-300 border border-green-600/50'
+                        : setupPieces.length === TOTAL_PIECES ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20'
+                        : 'bg-stone-800 text-stone-500 cursor-not-allowed border border-stone-700/50'
+                    }`}>
+                    {isReady ? 'Waiting...' : 'READY'}
+                  </button>
+                </div>
+                {gameState.opponentReady && (
+                  <p className="text-green-400 text-[10px] text-center animate-pulse mt-2">Opponent is ready!</p>
+                )}
+              </div>
+            ) : undefined}
             onSetupDragDrop={gameState.phase === 'setup' && !isReady ? (fromRow, fromCol, toRow, toCol) => {
               const fromIdx = setupPieces.findIndex(p => p.row === fromRow && p.col === fromCol);
               if (fromIdx < 0) return;
@@ -491,89 +558,6 @@ export default function GamePage() {
             } : undefined}
           />
 
-          {/* Setup panel - overlaid on the top portion of the board area */}
-          {gameState.phase === 'setup' && (
-            <div className="absolute inset-x-0 top-0 bottom-[45%] flex items-center justify-center z-20 pointer-events-none">
-              <div className="pointer-events-auto bg-stone-950/92 backdrop-blur-md border border-stone-700/60 rounded-2xl p-4 shadow-2xl max-w-lg w-full mx-8"
-                style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)' }}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 className="text-base font-bold text-amber-400 tracking-wide">
-                      {theme.flavor.setupTitle}
-                    </h2>
-                    <p className="text-[10px] text-stone-400 mt-0.5">
-                      Select a piece, then click your rows to place
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold tabular-nums text-stone-300">
-                      {setupPieces.length}<span className="text-stone-500">/{TOTAL_PIECES}</span>
-                    </span>
-                    {/* Progress ring */}
-                    <svg className="w-8 h-8 -rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" r="15" fill="none" stroke="#292524" strokeWidth="3" />
-                      <circle cx="18" cy="18" r="15" fill="none" stroke="#f59e0b" strokeWidth="3"
-                        strokeDasharray={`${(setupPieces.length / TOTAL_PIECES) * 94.2} 94.2`}
-                        strokeLinecap="round"
-                        className="transition-all duration-300"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Piece grid */}
-                <SetupTray
-                  selectedRank={selectedRank}
-                  onSelectRank={setSelectedRank}
-                  placedCounts={placedCounts}
-                  isReady={isReady}
-                />
-
-                {/* Action buttons */}
-                <div className="flex gap-2 items-center mt-3">
-                  <button
-                    onClick={handleAutoPlace}
-                    disabled={isReady}
-                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 rounded-lg text-xs font-medium
-                      disabled:opacity-40 transition-colors border border-stone-700/50"
-                  >
-                    Auto-Place
-                  </button>
-                  <button
-                    onClick={() => { setSetupPieces([]); setSelectedRank(null); }}
-                    disabled={isReady}
-                    className="flex-1 py-1.5 bg-stone-800 hover:bg-stone-700 rounded-lg text-xs font-medium
-                      disabled:opacity-40 transition-colors border border-stone-700/50"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={handleReady}
-                    disabled={setupPieces.length !== TOTAL_PIECES || isReady}
-                    className={`
-                      flex-[1.5] py-1.5 rounded-lg font-bold text-sm transition-all
-                      ${isReady
-                        ? 'bg-green-900/60 text-green-300 border border-green-600/50'
-                        : setupPieces.length === TOTAL_PIECES
-                          ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20'
-                          : 'bg-stone-800 text-stone-500 cursor-not-allowed border border-stone-700/50'
-                      }
-                    `}
-                  >
-                    {isReady ? 'Waiting...' : 'READY'}
-                  </button>
-                </div>
-
-                {gameState.opponentReady && (
-                  <p className="text-green-400 text-[10px] text-center animate-pulse mt-2">
-                    Opponent is ready!
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right sidebar — move log (playing/gameover only) */}

@@ -25,7 +25,7 @@ export default function SetupTray({
   const defByRank = new Map(PIECE_DEFINITIONS.map(d => [d.rank, d]));
 
   return (
-    <div className="grid grid-cols-7 gap-1.5">
+    <div className="grid grid-cols-7 gap-2">
       {SORTED_RANKS.map(rank => {
         const def = defByRank.get(rank)!;
         const placed = placedCounts[rank] ?? 0;
@@ -34,6 +34,7 @@ export default function SetupTray({
         const imgSrc = theme.pieceImages[rank];
         const isActive = selectedRank === rank;
         const fullyPlaced = remaining === 0;
+        const rankLabel = rank === '0' ? 'Spy' : rank === 'B' ? 'Bomb' : rank === 'F' ? 'Flag' : rank;
 
         return (
           <button
@@ -42,42 +43,51 @@ export default function SetupTray({
             onClick={() => onSelectRank(isActive ? null : rank)}
             disabled={isReady}
             className={`
-              relative flex flex-col items-center p-1 rounded-lg
+              relative flex flex-col items-center p-1.5 rounded-xl
               transition-all duration-150 select-none
               ${isReady ? 'opacity-40 cursor-not-allowed' : fullyPlaced ? 'opacity-30' : 'cursor-pointer hover:bg-stone-700/60'}
               ${isActive ? 'ring-2 ring-amber-400 bg-amber-900/30 scale-105' : 'bg-stone-800/40'}
             `}
           >
+            {/* Count badge - top right */}
+            <span className={`absolute -top-1 -right-1 text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-full z-10 ${
+              fullyPlaced
+                ? 'bg-green-600 text-white'
+                : isActive
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-stone-700 text-stone-300'
+            }`}>
+              {remaining}/{def.quantity}
+            </span>
+
             {/* Circular piece image */}
-            <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center
-              ${isActive ? 'ring-1 ring-amber-400/50' : 'ring-1 ring-stone-600/50'}
+            <div className={`w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
+              ${isActive ? 'ring-2 ring-amber-400/50' : 'ring-1 ring-stone-600/50'}
               bg-stone-900
             `}>
               {imgSrc && !failedImgs.has(rank) ? (
                 <img
                   src={imgSrc}
                   alt={theme.pieceNames[rank]}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover scale-[1.15]"
                   onError={() => setFailedImgs(prev => new Set(prev).add(rank))}
                 />
               ) : (
-                <span className="text-sm font-bold" style={{ color: display.color }}>
+                <span className="text-xl font-bold" style={{ color: display.color }}>
                   {theme.pieceEmojis[rank]}
                 </span>
               )}
             </div>
 
-            {/* Count */}
-            <span className={`text-[9px] font-bold tabular-nums mt-0.5 ${
-              fullyPlaced ? 'text-green-400' : isActive ? 'text-amber-300' : 'text-stone-400'
-            }`}>
-              {remaining}/{def.quantity}
+            {/* Rank label */}
+            <span className="text-[11px] font-black leading-none mt-1" style={{ color: display.color }}>
+              {rankLabel}
             </span>
 
-            {/* Checkmark */}
+            {/* Checkmark overlay */}
             {fullyPlaced && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40">
-                <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+                <svg className="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>

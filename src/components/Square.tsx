@@ -83,7 +83,7 @@ export default function Square({
       className={`
         aspect-square relative flex items-center justify-center
         transition-all duration-150 cursor-pointer theme-transition
-        rounded-md overflow-hidden
+        rounded-md
         ${isSetupZone ? 'ring-1 ring-inset ring-emerald-500/25' : ''}
         ${isSelected ? 'ring-2 ring-yellow-400 shadow-yellow-400/20' : ''}
         ${isValidMove && !isAttackTarget ? 'valid-move-glow' : ''}

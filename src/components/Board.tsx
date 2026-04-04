@@ -19,6 +19,7 @@ interface BoardProps {
   myNickname?: string;
   opponentNickname?: string;
   onSetupDragDrop?: (fromRow: number, fromCol: number, toRow: number, toCol: number) => void;
+  setupOverlay?: React.ReactNode;
 }
 
 // Columns: A-J (left to right), Rows: 1-8 (bottom to top visually, so 1 = your back row)
@@ -28,7 +29,7 @@ const ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 export default function Board({
   board, myPlayer, selectedSquare, validMoves,
   lastMove, revealingSquares, onSquareClick, phase, isMyTurn,
-  myNickname, opponentNickname, onSetupDragDrop,
+  myNickname, opponentNickname, onSetupDragDrop, setupOverlay,
 }: BoardProps) {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,20 +97,21 @@ export default function Board({
     }
 
     // Find a piece that moved (exists in new board but not in same position in old board)
-    for (let r = 0; r < BOARD_ROWS; r++) {
-      for (let c = 0; c < BOARD_COLS; c++) {
+    let found = false;
+    for (let r = 0; r < BOARD_ROWS && !found; r++) {
+      for (let c = 0; c < BOARD_COLS && !found; c++) {
         const newPiece = board[r]?.[c];
         const oldPiece = prevBoard[r]?.[c];
         // A piece appeared here that wasn't here before
         if (newPiece && (!oldPiece || oldPiece.id !== newPiece.id) && newPiece.owner !== myPlayer) {
           // Find where this piece was before
-          for (let pr = 0; pr < BOARD_ROWS; pr++) {
-            for (let pc = 0; pc < BOARD_COLS; pc++) {
+          for (let pr = 0; pr < BOARD_ROWS && !found; pr++) {
+            for (let pc = 0; pc < BOARD_COLS && !found; pc++) {
               const oldP = prevBoard[pr]?.[pc];
               if (oldP && oldP.id === newPiece.id && (pr !== r || pc !== c)) {
                 setSlidingPiece({ piece: newPiece, fromRow: pr, fromCol: pc, toRow: r, toCol: c });
-                setTimeout(() => setSlidingPiece(null), 800);
-                break;
+                setTimeout(() => setSlidingPiece(null), 1400);
+                found = true;
               }
             }
           }
@@ -155,7 +157,7 @@ export default function Board({
     const deltaCol = fromDisplayCol - toDisplayCol;
 
     return {
-      animation: 'pieceSlideIn 0.4s ease-out',
+      animation: 'pieceSlideIn 0.8s ease-out',
       '--slide-from-x': `${deltaCol * 100}%`,
       '--slide-from-y': `${deltaRow * 100}%`,
     } as React.CSSProperties;
@@ -167,7 +169,7 @@ export default function Board({
       className="w-full mx-auto relative theme-transition"
     >
       <div
-        className="mx-auto"
+        className="mx-auto relative"
         style={boardWidth ? { width: `${boardWidth}px`, maxWidth: '100%' } : { maxWidth: '1000px' }}
       >
         {/* Opponent label */}
@@ -272,17 +274,17 @@ export default function Board({
                     className="absolute inset-0 w-full h-full pointer-events-none z-30"
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
-                    style={{ animation: 'fadeOut 0.8s ease-out forwards' }}
+                    style={{ animation: 'fadeOut 1s ease-out forwards' }}
                   >
                     <defs>
-                      <marker id="arrowhead" markerWidth="3" markerHeight="2.5" refX="3" refY="1.25" orient="auto">
-                        <polygon points="0 0, 3 1.25, 0 2.5" fill="#4ade80" />
+                      <marker id="arrowhead" markerWidth="4" markerHeight="3" refX="4" refY="1.5" orient="auto">
+                        <polygon points="0 0, 4 1.5, 0 3" fill="#4ade80" />
                       </marker>
                     </defs>
                     <line
                       x1={x1} y1={y1} x2={x2} y2={y2}
                       stroke="#4ade80"
-                      strokeWidth="0.6"
+                      strokeWidth="1.2"
                       strokeLinecap="round"
                       markerEnd="url(#arrowhead)"
                       opacity="0.8"
@@ -306,6 +308,15 @@ export default function Board({
             {myNickname || 'You'}
           </span>
         </div>
+
+        {/* Setup overlay - aligned with the board grid (offset by row labels) */}
+        {setupOverlay && (
+          <div className="absolute top-0 bottom-[38%] flex items-center justify-center z-20 pointer-events-none" style={{ left: '32px', right: 0 }}>
+            <div className="pointer-events-auto w-full px-1">
+              {setupOverlay}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

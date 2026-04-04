@@ -34,19 +34,19 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
   // Ring color based on piece type
   const ringColor = isOwn
     ? isOwnFlag
-      ? 'ring-amber-400/80 shadow-amber-400/30'
+      ? 'ring-amber-400 ring-[3px]'
       : isOwnBomb
-        ? 'ring-red-500/80 shadow-red-500/30'
-        : 'ring-blue-400/60 shadow-blue-500/20'
+        ? 'ring-red-500 ring-[3px]'
+        : 'ring-blue-400/60'
     : showInfo
-      ? 'ring-red-400/60 shadow-red-500/20'
-      : 'ring-red-700/50 shadow-red-900/20';
+      ? 'ring-red-400/60'
+      : 'ring-red-600';
 
   return (
     <div
       className={`
         w-full h-full flex items-center justify-center
-        select-none relative p-[1px]
+        select-none relative p-[3px]
       `}
     >
       {/* Circular piece container */}
@@ -57,9 +57,9 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
           ${ringColor}
           ${isOwn
             ? isOwnFlag
-              ? 'bg-gradient-to-br from-amber-900/90 to-stone-950 flag-glow'
+              ? 'bg-gradient-to-br from-amber-800 to-amber-950 flag-glow'
               : isOwnBomb
-                ? 'bg-gradient-to-br from-red-950 to-stone-950 bomb-glow'
+                ? 'bg-gradient-to-br from-red-900 to-red-950 bomb-glow'
                 : 'bg-gradient-to-br from-stone-800 to-stone-950'
             : showInfo
               ? 'bg-gradient-to-br from-stone-800 to-stone-950 piece-shimmer'
@@ -75,12 +75,12 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
         {showInfo && rank && display ? (
           <>
             {pieceImage && !imgFailed ? (
-              <div className="w-[95%] h-[95%] relative">
+              <div className="w-full h-full relative">
                 <Image
                   src={pieceImage}
                   alt={display.symbol}
                   fill
-                  className="object-contain drop-shadow-md"
+                  className="object-cover drop-shadow-md scale-[1.15]"
                   onError={() => setImgFailed(true)}
                   sizes="64px"
                 />
@@ -97,7 +97,7 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
         ) : (
           <>
             {enemyPieceImage && !enemyImgFailed ? (
-              <div className="w-[95%] h-[95%] relative">
+              <div className="w-full h-full relative">
                 <Image
                   src={enemyPieceImage}
                   alt="Hidden piece"

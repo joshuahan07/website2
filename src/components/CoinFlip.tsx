@@ -13,9 +13,9 @@ export default function CoinFlip({ player1Name, player2Name, winner, onComplete 
   const [phase, setPhase] = useState<'spinning' | 'result'>('spinning');
 
   useEffect(() => {
-    // Show spinning for 2 seconds, then result for 2 seconds
-    const spinTimer = setTimeout(() => setPhase('result'), 2000);
-    const doneTimer = setTimeout(() => onComplete(), 4000);
+    // Show spinning for 1.5 seconds, then result for 1 second
+    const spinTimer = setTimeout(() => setPhase('result'), 1500);
+    const doneTimer = setTimeout(() => onComplete(), 2500);
     return () => {
       clearTimeout(spinTimer);
       clearTimeout(doneTimer);

@@ -185,11 +185,21 @@ export default function RevealAnimation({ event }: RevealAnimationProps) {
         )}
 
         {event.spotterResult && (
-          <p className={`mt-4 text-base font-black tracking-wide animate-scale-in ${
-            event.spotterResult.correct ? 'text-green-400' : 'text-red-400'
-          }`}>
-            {event.spotterResult.correct ? 'CORRECT! Target destroyed!' : 'Incorrect prediction.'}
-          </p>
+          <div className="mt-4 animate-scale-in text-center">
+            {event.spotterResult.predictedRank && (
+              <p className="text-sm text-cyan-300 mb-1">
+                Predicted: <span className="font-black">{theme.pieceEmojis[event.spotterResult.predictedRank]} {theme.pieceNames[event.spotterResult.predictedRank]}</span>
+              </p>
+            )}
+            <p className="text-sm text-stone-400 mb-1">
+              Actual: <span className="font-black text-white">{theme.pieceEmojis[event.spotterResult.targetPiece.rank]} {theme.pieceNames[event.spotterResult.targetPiece.rank]}</span>
+            </p>
+            <p className={`text-base font-black tracking-wide ${
+              event.spotterResult.correct ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {event.spotterResult.correct ? 'CORRECT! Target destroyed!' : 'WRONG!'}
+            </p>
+          </div>
         )}
       </div>
     </div>

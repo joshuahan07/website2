@@ -92,18 +92,24 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
   }
 
   if (result.reveal) {
-    io.to(roomCode).emit(S2C.REVEAL_EVENT, result.reveal);
-    // Delay game state update until after reveal animation finishes
-    // so player can see the battle before board updates
+    // Send game state FIRST so the client sees the piece move + arrow
+    // Then send reveal event slightly after so the battle card shows after the slide
+    sendGameState(io, game);
+
     setTimeout(() => {
-      if (result.gameOver) {
+      io.to(roomCode).emit(S2C.REVEAL_EVENT, result.reveal);
+    }, 100);
+
+    // Handle game over after full animation
+    if (result.gameOver) {
+      setTimeout(() => {
         game.phase = 'gameover';
-        game.winner = result.gameOver.winner;
-        game.winReason = result.gameOver.reason;
+        game.winner = result.gameOver!.winner;
+        game.winReason = result.gameOver!.reason;
         io.to(roomCode).emit(S2C.GAME_OVER, result.gameOver);
-      }
-      sendGameState(io, game);
-    }, result.reveal.duration + 300);
+        sendGameState(io, game);
+      }, 1500 + result.reveal.duration + 500);
+    }
     return;
   }
 
@@ -175,7 +181,7 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
             { position: result.spotterPrompt!.spotterPosition, rank: '1', name: 'Spotter', owner: 2 },
             { position: prediction.targetPosition, rank: spotterResult.targetPiece.rank, name: spotterResult.targetPiece.name, owner: spotterResult.targetPiece.owner },
           ],
-          spotterResult,
+          spotterResult: { ...spotterResult, predictedRank: prediction.predictedRank },
           duration: 3000,
         };
         io.to(roomCode).emit(S2C.REVEAL_EVENT, spotterRevealEvent);
@@ -447,9 +453,9 @@ app.prepare().then(() => {
           winner: game.currentTurn,
         });
 
-        // If bot game and bot goes first, wait for coin flip animation (4.5s) before bot moves
+        // If bot game and bot goes first, wait for coin flip animation (2.5s) + small buffer before bot moves
         if (botGames.has(roomCode) && game.currentTurn === 2) {
-          setTimeout(() => executeBotTurn(io, roomCode), 4500);
+          setTimeout(() => executeBotTurn(io, roomCode), 3500);
         }
       }
     });
@@ -478,11 +484,6 @@ app.prepare().then(() => {
       if (!result.success) {
         socket.emit(S2C.INVALID_MOVE, { message: 'Invalid move' });
         return;
-      }
-
-      // Send reveal event if applicable
-      if (result.reveal) {
-        io.to(roomCode).emit(S2C.REVEAL_EVENT, result.reveal);
       }
 
       // Handle spotter prompt
@@ -524,9 +525,17 @@ app.prepare().then(() => {
 
       sendGameState(io, game);
 
-      // Trigger bot turn after a delay
+      // Send reveal event AFTER game state so client sees piece move first
+      if (result.reveal) {
+        setTimeout(() => {
+          io.to(roomCode).emit(S2C.REVEAL_EVENT, result.reveal);
+        }, 100);
+      }
+
+      // Trigger bot turn after FULL client animation completes
+      // Client timeline: 1500ms slide/arrow delay + reveal.duration battle card + 500ms buffer
       if (!result.gameOver && botGames.has(roomCode) && game.currentTurn === 2) {
-        const delay = result.reveal ? result.reveal.duration + 1000 : 800;
+        const delay = result.reveal ? 1500 + result.reveal.duration + 500 : 1000;
         setTimeout(() => executeBotTurn(io, roomCode), delay);
       }
     });
@@ -611,7 +620,7 @@ app.prepare().then(() => {
             owner: result.targetPiece.owner,
           },
         ],
-        spotterResult: result,
+        spotterResult: { ...result, predictedRank: data.predictedRank },
         duration: 2000,
       };
 
@@ -640,9 +649,9 @@ app.prepare().then(() => {
       setTimeout(() => {
         sendGameState(io, game);
 
-        // Trigger bot turn after spotter resolution
+        // Trigger bot turn after spotter resolution + client animation
         if (game.phase === 'playing' && botGames.has(roomCode) && game.currentTurn === 2) {
-          setTimeout(() => executeBotTurn(io, roomCode), 800);
+          setTimeout(() => executeBotTurn(io, roomCode), 2000);
         }
       }, 2000);
     });

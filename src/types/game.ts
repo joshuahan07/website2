@@ -64,6 +64,7 @@ export interface SpotterResult {
   correct: boolean;
   targetPiece: PlacedPiece; // revealed to both players
   spotterPiece: PlacedPiece;
+  predictedRank?: Rank;
 }
 
 export interface Move {

@@ -257,12 +257,12 @@
 
 /* Golden glow for own flag piece */
 @keyframes flagGlow {
-  0%, 100% { box-shadow: 0 0 8px rgba(251, 191, 36, 0.6), 0 0 20px rgba(251, 191, 36, 0.3), 0 0 40px rgba(251, 191, 36, 0.15); }
-  50% { box-shadow: 0 0 16px rgba(251, 191, 36, 0.8), 0 0 36px rgba(251, 191, 36, 0.5), 0 0 60px rgba(251, 191, 36, 0.2); }
+  0%, 100% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 0 25px rgba(251, 191, 36, 0.5), 0 0 50px rgba(251, 191, 36, 0.25), 0 0 80px rgba(251, 191, 36, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 1), 0 0 45px rgba(251, 191, 36, 0.7), 0 0 70px rgba(251, 191, 36, 0.35), 0 0 100px rgba(251, 191, 36, 0.15); }
 }
 
 .flag-glow {
-  animation: flagGlow 2s ease-in-out infinite;
+  animation: flagGlow 1.5s ease-in-out infinite;
 }
 
 /* Fade out for arrow overlay */
@@ -292,7 +292,7 @@
 }
 
 .coin-spinning {
-  animation: coinSpin 2s ease-in-out;
+  animation: coinSpin 1.5s ease-in-out;
 }
 
 /* Coin landed - show winner side */
@@ -307,12 +307,12 @@
 
 /* Red glow for own bomb pieces */
 @keyframes bombGlow {
-  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.1); }
-  50% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.7), 0 0 32px rgba(239, 68, 68, 0.45), 0 0 50px rgba(239, 68, 68, 0.2); }
+  0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.7), 0 0 25px rgba(239, 68, 68, 0.4), 0 0 50px rgba(239, 68, 68, 0.2), 0 0 70px rgba(239, 68, 68, 0.1); }
+  50% { box-shadow: 0 0 18px rgba(239, 68, 68, 0.9), 0 0 40px rgba(239, 68, 68, 0.6), 0 0 65px rgba(239, 68, 68, 0.3), 0 0 90px rgba(239, 68, 68, 0.15); }
 }
 
 .bomb-glow {
-  animation: bombGlow 2s ease-in-out infinite;
+  animation: bombGlow 1.5s ease-in-out infinite;
 }
 
 /* Turn indicator icon swing */
