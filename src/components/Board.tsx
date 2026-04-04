@@ -96,37 +96,35 @@ export default function Board({
       return;
     }
 
-    // Strategy: find opponent pieces that disappeared from old board,
-    // and opponent pieces that appeared on new board.
-    // Match them by ID first, then by owner as fallback.
+    // Track all changes: opponent pieces that disappeared/appeared,
+    // and own pieces that disappeared (got attacked)
 
-    const disappeared: { id: string; owner: number; row: number; col: number }[] = [];
-    const appeared: { id: string; owner: number; row: number; col: number }[] = [];
+    const enemyDisappeared: { id: string; owner: number; row: number; col: number }[] = [];
+    const enemyAppeared: { id: string; owner: number; row: number; col: number }[] = [];
+    const myDisappeared: { id: string; owner: number; row: number; col: number }[] = [];
 
     for (let r = 0; r < BOARD_ROWS; r++) {
       for (let c = 0; c < BOARD_COLS; c++) {
         const oldP = prevBoard[r]?.[c];
         const newP = board[r]?.[c];
 
-        // Piece was here before but is gone or different now
-        if (oldP && oldP.owner !== myPlayer) {
-          if (!newP || newP.id !== oldP.id) {
-            disappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
+        if (oldP && (!newP || newP.id !== oldP.id)) {
+          if (oldP.owner !== myPlayer) {
+            enemyDisappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
+          } else {
+            myDisappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
           }
         }
 
-        // Piece is here now but wasn't before or is different
-        if (newP && newP.owner !== myPlayer) {
-          if (!oldP || oldP.id !== newP.id) {
-            appeared.push({ id: newP.id, owner: newP.owner, row: r, col: c });
-          }
+        if (newP && newP.owner !== myPlayer && (!oldP || oldP.id !== newP.id)) {
+          enemyAppeared.push({ id: newP.id, owner: newP.owner, row: r, col: c });
         }
       }
     }
 
-    // Match by ID
-    for (const app of appeared) {
-      const match = disappeared.find(d => d.id === app.id);
+    // Case 1: opponent piece moved (appeared somewhere new) - match by ID
+    for (const app of enemyAppeared) {
+      const match = enemyDisappeared.find(d => d.id === app.id);
       if (match) {
         setSlidingPiece({
           piece: board[app.row]![app.col]!,
@@ -139,10 +137,10 @@ export default function Board({
       }
     }
 
-    // Fallback: if exactly one disappeared and one appeared (same owner), treat as a move
-    if (appeared.length === 1 && disappeared.length >= 1) {
-      const app = appeared[0];
-      const match = disappeared.find(d => d.owner === app.owner);
+    // Case 2: opponent piece appeared but no ID match - fallback by owner
+    if (enemyAppeared.length === 1 && enemyDisappeared.length >= 1) {
+      const app = enemyAppeared[0];
+      const match = enemyDisappeared.find(d => d.owner === app.owner);
       if (match) {
         setSlidingPiece({
           piece: board[app.row]![app.col]!,
@@ -153,6 +151,24 @@ export default function Board({
         prevBoardRef.current = board;
         return;
       }
+    }
+
+    // Case 3: opponent attacked and LOST (or both destroyed)
+    // Enemy piece disappeared AND one of my pieces also disappeared
+    // The enemy moved FROM its old position TO my piece's position (where combat happened)
+    if (enemyDisappeared.length === 1 && myDisappeared.length === 1 && enemyAppeared.length === 0) {
+      const attacker = enemyDisappeared[0];
+      const target = myDisappeared[0];
+      // Create a temporary piece object for the slide animation
+      const tempPiece: ClientPiece = { id: attacker.id, owner: attacker.owner as 1 | 2, row: target.row, col: target.col };
+      setSlidingPiece({
+        piece: tempPiece,
+        fromRow: attacker.row, fromCol: attacker.col,
+        toRow: target.row, toCol: target.col,
+      });
+      setTimeout(() => setSlidingPiece(null), 1400);
+      prevBoardRef.current = board;
+      return;
     }
 
     prevBoardRef.current = board;
