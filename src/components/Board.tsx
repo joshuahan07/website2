@@ -20,6 +20,7 @@ interface BoardProps {
   opponentNickname?: string;
   onSetupDragDrop?: (fromRow: number, fromCol: number, toRow: number, toCol: number) => void;
   setupOverlay?: React.ReactNode;
+  opponentMove?: { from: SquareType; to: SquareType } | null;
 }
 
 // Columns: A-J (left to right), Rows: 1-8 (bottom to top visually, so 1 = your back row)
@@ -29,20 +30,13 @@ const ROW_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 export default function Board({
   board, myPlayer, selectedSquare, validMoves,
   lastMove, revealingSquares, onSquareClick, phase, isMyTurn,
-  myNickname, opponentNickname, onSetupDragDrop, setupOverlay,
+  myNickname, opponentNickname, onSetupDragDrop, setupOverlay, opponentMove,
 }: BoardProps) {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [boardWidth, setBoardWidth] = useState<number | null>(null);
-  const prevBoardRef = useRef<(ClientPiece | null)[][] | null>(null);
   const dragSourceRef = useRef<{ row: number; col: number } | null>(null);
-  const [slidingPiece, setSlidingPiece] = useState<{
-    piece: ClientPiece;
-    fromRow: number;
-    fromCol: number;
-    toRow: number;
-    toCol: number;
-  } | null>(null);
+  const [arrowMove, setArrowMove] = useState<{ fromRow: number; fromCol: number; toRow: number; toCol: number } | null>(null);
 
   const LABEL_TOP = 20;      // column labels above board
   const LABEL_BOTTOM = 24;   // side labels below board
@@ -88,91 +82,21 @@ export default function Board({
     return () => clearTimeout(timer);
   }, [phase, computeSize]);
 
-  // Detect opponent piece movement and trigger slide animation
+  // Show arrow for opponent moves - driven by opponentMove prop from move log
   useEffect(() => {
-    const prevBoard = prevBoardRef.current;
-    if (!prevBoard || !board) {
-      prevBoardRef.current = board;
+    if (!opponentMove) {
+      setArrowMove(null);
       return;
     }
-
-    // Track all changes: opponent pieces that disappeared/appeared,
-    // and own pieces that disappeared (got attacked)
-
-    const enemyDisappeared: { id: string; owner: number; row: number; col: number }[] = [];
-    const enemyAppeared: { id: string; owner: number; row: number; col: number }[] = [];
-    const myDisappeared: { id: string; owner: number; row: number; col: number }[] = [];
-
-    for (let r = 0; r < BOARD_ROWS; r++) {
-      for (let c = 0; c < BOARD_COLS; c++) {
-        const oldP = prevBoard[r]?.[c];
-        const newP = board[r]?.[c];
-
-        if (oldP && (!newP || newP.id !== oldP.id)) {
-          if (oldP.owner !== myPlayer) {
-            enemyDisappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
-          } else {
-            myDisappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
-          }
-        }
-
-        if (newP && newP.owner !== myPlayer && (!oldP || oldP.id !== newP.id)) {
-          enemyAppeared.push({ id: newP.id, owner: newP.owner, row: r, col: c });
-        }
-      }
-    }
-
-    // Case 1: opponent piece moved (appeared somewhere new) - match by ID
-    for (const app of enemyAppeared) {
-      const match = enemyDisappeared.find(d => d.id === app.id);
-      if (match) {
-        setSlidingPiece({
-          piece: board[app.row]![app.col]!,
-          fromRow: match.row, fromCol: match.col,
-          toRow: app.row, toCol: app.col,
-        });
-        setTimeout(() => setSlidingPiece(null), 1400);
-        prevBoardRef.current = board;
-        return;
-      }
-    }
-
-    // Case 2: opponent piece appeared but no ID match - fallback by owner
-    if (enemyAppeared.length === 1 && enemyDisappeared.length >= 1) {
-      const app = enemyAppeared[0];
-      const match = enemyDisappeared.find(d => d.owner === app.owner);
-      if (match) {
-        setSlidingPiece({
-          piece: board[app.row]![app.col]!,
-          fromRow: match.row, fromCol: match.col,
-          toRow: app.row, toCol: app.col,
-        });
-        setTimeout(() => setSlidingPiece(null), 1400);
-        prevBoardRef.current = board;
-        return;
-      }
-    }
-
-    // Case 3: opponent attacked and LOST (or both destroyed)
-    // Enemy piece disappeared AND one of my pieces also disappeared
-    // The enemy moved FROM its old position TO my piece's position (where combat happened)
-    if (enemyDisappeared.length === 1 && myDisappeared.length === 1 && enemyAppeared.length === 0) {
-      const attacker = enemyDisappeared[0];
-      const target = myDisappeared[0];
-      // Create a temporary piece object for the slide animation
-      const tempPiece: ClientPiece = { id: attacker.id, owner: attacker.owner as 1 | 2, row: target.row, col: target.col };
-      setSlidingPiece({
-        piece: tempPiece,
-        fromRow: attacker.row, fromCol: attacker.col,
-        toRow: target.row, toCol: target.col,
-      });
-      setTimeout(() => setSlidingPiece(null), 1400);
-      prevBoardRef.current = board;
-      return;
-    }
-
-    prevBoardRef.current = board;
-  }, [board, myPlayer]);
+    setArrowMove({
+      fromRow: opponentMove.from.row,
+      fromCol: opponentMove.from.col,
+      toRow: opponentMove.to.row,
+      toCol: opponentMove.to.col,
+    });
+    const timer = setTimeout(() => setArrowMove(null), 1400);
+    return () => clearTimeout(timer);
+  }, [opponentMove]);
 
   // Flip board so the current player's pieces are at the bottom.
   const rows: number[] = [];
@@ -194,16 +118,15 @@ export default function Board({
     return ROW_LABELS[BOARD_ROWS - 1 - displayIndex];
   };
 
-  // Calculate slide transform for the sliding piece
+  // Calculate slide transform for the piece that moved
   const getSlideStyle = (row: number, col: number): React.CSSProperties | undefined => {
-    if (!slidingPiece) return undefined;
-    if (row !== slidingPiece.toRow || col !== slidingPiece.toCol) return undefined;
+    if (!arrowMove) return undefined;
+    if (row !== arrowMove.toRow || col !== arrowMove.toCol) return undefined;
 
-    // Calculate display positions
-    const fromDisplayRow = rows.indexOf(slidingPiece.fromRow);
-    const toDisplayRow = rows.indexOf(slidingPiece.toRow);
-    const fromDisplayCol = cols.indexOf(slidingPiece.fromCol);
-    const toDisplayCol = cols.indexOf(slidingPiece.toCol);
+    const fromDisplayRow = rows.indexOf(arrowMove.fromRow);
+    const toDisplayRow = rows.indexOf(arrowMove.toRow);
+    const fromDisplayCol = cols.indexOf(arrowMove.fromCol);
+    const toDisplayCol = cols.indexOf(arrowMove.toCol);
 
     const deltaRow = fromDisplayRow - toDisplayRow;
     const deltaCol = fromDisplayCol - toDisplayCol;
@@ -309,11 +232,11 @@ export default function Board({
               ))}
 
               {/* Green arrow overlay for opponent moves */}
-              {slidingPiece && (() => {
-                const fromDI = rows.indexOf(slidingPiece.fromRow);
-                const toDI = rows.indexOf(slidingPiece.toRow);
-                const fromCI = cols.indexOf(slidingPiece.fromCol);
-                const toCI = cols.indexOf(slidingPiece.toCol);
+              {arrowMove && (() => {
+                const fromDI = rows.indexOf(arrowMove.fromRow);
+                const toDI = rows.indexOf(arrowMove.toRow);
+                const fromCI = cols.indexOf(arrowMove.fromCol);
+                const toCI = cols.indexOf(arrowMove.toCol);
                 // Calculate % positions (center of each cell)
                 const cellW = 100 / BOARD_COLS;
                 const cellH = 100 / BOARD_ROWS;

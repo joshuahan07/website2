@@ -61,6 +61,7 @@ export default function GamePage() {
   const [replayHighlight, setReplayHighlight] = useState<{ from: Square; to: Square } | null>(null);
   const [copied, setCopied] = useState(false);
   const [coinFlip, setCoinFlip] = useState<{ player1Name: string; player2Name: string; winner: 1 | 2 } | null>(null);
+  const [opponentMove, setOpponentMove] = useState<{ from: Square; to: Square } | null>(null);
 
   // Setup state
   const [setupPieces, setSetupPieces] = useState<PlacedPiece[]>([]);
@@ -110,7 +111,9 @@ export default function GamePage() {
           const latestMove = state.moveLog[state.moveLog.length - 1];
           if (latestMove && latestMove.player !== myPlayer.current) {
             setLastMove({ from: latestMove.from, to: latestMove.to });
+            setOpponentMove({ from: latestMove.from, to: latestMove.to });
             setTimeout(() => setLastMove(null), 2000);
+            setTimeout(() => setOpponentMove(null), 1500);
           }
         }
         return state;
@@ -479,6 +482,7 @@ export default function GamePage() {
             isMyTurn={isMyTurn}
             myNickname={gameState.myNickname}
             opponentNickname={gameState.opponentNickname}
+            opponentMove={opponentMove}
             setupOverlay={gameState.phase === 'setup' ? (
               <div className="bg-stone-950/92 backdrop-blur-md border border-stone-700/60 rounded-2xl p-4 shadow-2xl"
                 style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)' }}
