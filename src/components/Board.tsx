@@ -96,26 +96,62 @@ export default function Board({
       return;
     }
 
-    // Find a piece that moved (exists in new board but not in same position in old board)
-    let found = false;
-    for (let r = 0; r < BOARD_ROWS && !found; r++) {
-      for (let c = 0; c < BOARD_COLS && !found; c++) {
-        const newPiece = board[r]?.[c];
-        const oldPiece = prevBoard[r]?.[c];
-        // A piece appeared here that wasn't here before
-        if (newPiece && (!oldPiece || oldPiece.id !== newPiece.id) && newPiece.owner !== myPlayer) {
-          // Find where this piece was before
-          for (let pr = 0; pr < BOARD_ROWS && !found; pr++) {
-            for (let pc = 0; pc < BOARD_COLS && !found; pc++) {
-              const oldP = prevBoard[pr]?.[pc];
-              if (oldP && oldP.id === newPiece.id && (pr !== r || pc !== c)) {
-                setSlidingPiece({ piece: newPiece, fromRow: pr, fromCol: pc, toRow: r, toCol: c });
-                setTimeout(() => setSlidingPiece(null), 1400);
-                found = true;
-              }
-            }
+    // Strategy: find opponent pieces that disappeared from old board,
+    // and opponent pieces that appeared on new board.
+    // Match them by ID first, then by owner as fallback.
+
+    const disappeared: { id: string; owner: number; row: number; col: number }[] = [];
+    const appeared: { id: string; owner: number; row: number; col: number }[] = [];
+
+    for (let r = 0; r < BOARD_ROWS; r++) {
+      for (let c = 0; c < BOARD_COLS; c++) {
+        const oldP = prevBoard[r]?.[c];
+        const newP = board[r]?.[c];
+
+        // Piece was here before but is gone or different now
+        if (oldP && oldP.owner !== myPlayer) {
+          if (!newP || newP.id !== oldP.id) {
+            disappeared.push({ id: oldP.id, owner: oldP.owner, row: r, col: c });
           }
         }
+
+        // Piece is here now but wasn't before or is different
+        if (newP && newP.owner !== myPlayer) {
+          if (!oldP || oldP.id !== newP.id) {
+            appeared.push({ id: newP.id, owner: newP.owner, row: r, col: c });
+          }
+        }
+      }
+    }
+
+    // Match by ID
+    for (const app of appeared) {
+      const match = disappeared.find(d => d.id === app.id);
+      if (match) {
+        setSlidingPiece({
+          piece: board[app.row]![app.col]!,
+          fromRow: match.row, fromCol: match.col,
+          toRow: app.row, toCol: app.col,
+        });
+        setTimeout(() => setSlidingPiece(null), 1400);
+        prevBoardRef.current = board;
+        return;
+      }
+    }
+
+    // Fallback: if exactly one disappeared and one appeared (same owner), treat as a move
+    if (appeared.length === 1 && disappeared.length >= 1) {
+      const app = appeared[0];
+      const match = disappeared.find(d => d.owner === app.owner);
+      if (match) {
+        setSlidingPiece({
+          piece: board[app.row]![app.col]!,
+          fromRow: match.row, fromCol: match.col,
+          toRow: app.row, toCol: app.col,
+        });
+        setTimeout(() => setSlidingPiece(null), 1400);
+        prevBoardRef.current = board;
+        return;
       }
     }
 
