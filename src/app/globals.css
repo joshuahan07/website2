@@ -3,12 +3,41 @@
 @tailwind utilities;
 
 body {
-  background: #0c0a09;
-  background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(30, 27, 24, 0.5) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 50%, rgba(25, 22, 19, 0.4) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(20, 18, 15, 0.3) 0%, transparent 70%);
-  color: #e7e5e4;
+  background: #0B0C10;
+  color: #F3F4F6;
+}
+
+/* Glass Card Effect */
+.glass-card {
+  background: rgba(20, 22, 27, 0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+
+.glass-card-strong {
+  background: rgba(20, 22, 27, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+}
+
+/* Dust Particles */
+@keyframes dust-float {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+  25% { transform: translateY(-20px) translateX(10px); opacity: 0.6; }
+  50% { transform: translateY(-10px) translateX(-5px); opacity: 0.4; }
+  75% { transform: translateY(-30px) translateX(5px); opacity: 0.5; }
+}
+
+.dust-particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: dust-float 8s ease-in-out infinite;
 }
 
 /* ── Scrollbar styling ──────────────────────────────────── */
