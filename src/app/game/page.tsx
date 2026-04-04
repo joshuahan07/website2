@@ -398,7 +398,20 @@ export default function GamePage() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-stone-900/90 border-b border-stone-700 backdrop-blur-sm relative z-50">
         <div className="flex items-center gap-3">
-          <span className="text-amber-400 font-black text-lg tracking-wider">BATTLE TACTIC</span>
+          <button
+            onClick={() => {
+              if (gameState?.phase === 'playing') {
+                if (window.confirm('Leave the game? Your progress will be lost.')) {
+                  router.push('/');
+                }
+              } else {
+                router.push('/');
+              }
+            }}
+            className="text-blue-400 font-black text-lg tracking-wider hover:text-blue-300 transition-colors cursor-pointer"
+          >
+            OUTRANK
+          </button>
           <button
             onClick={handleCopyRoomCode}
             className="text-xs text-stone-400 bg-stone-800 px-2 py-0.5 rounded font-mono

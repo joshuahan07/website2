@@ -19,7 +19,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Battle Tactic — Online Multiplayer",
+  title: "Outrank — Online Multiplayer",
   description: "Classic strategy board game — play online with friends",
 };
 

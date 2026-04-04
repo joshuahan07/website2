@@ -47,8 +47,8 @@ export function generatePieceSet(owner: PlayerNumber): Piece[] {
 }
 
 export const RANK_DISPLAY: Record<Rank, { symbol: string; color: string }> = {
-  'F':  { symbol: '🚩', color: '#fbbf24' }, // yellow
-  'B':  { symbol: '💣', color: '#ef4444' }, // red
+  'F':  { symbol: '🏆', color: '#fbbf24' }, // yellow
+  'B':  { symbol: '💥', color: '#ef4444' }, // red
   '0':  { symbol: 'S',  color: '#8b5cf6' }, // purple
   '1':  { symbol: '1',  color: '#06b6d4' }, // cyan
   '2':  { symbol: '2',  color: '#22c55e' }, // green

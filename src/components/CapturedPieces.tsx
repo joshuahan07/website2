@@ -34,37 +34,42 @@ function CaptureGrid({ pieces, label, color, highlightColor }: {
       <h4 className={`text-[10px] uppercase tracking-wider mb-1.5 ${color}`}>
         {label} ({pieces.length})
       </h4>
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid grid-cols-4 gap-1.5">
         {SORTED_RANKS.map(rank => {
           const def = defByRank.get(rank)!;
           const captured = countByRank[rank] || 0;
           const display = RANK_DISPLAY[rank];
           const imgSrc = theme.pieceImages[rank];
           const hasCaptured = captured > 0;
+          const crop = imgSrc ? getPieceCrop(theme.id, imgSrc) : null;
 
           return (
             <div
               key={rank}
-              className={`flex flex-col items-center rounded p-1 ${
-                hasCaptured ? 'bg-stone-800/60' : 'opacity-35'
+              className={`flex flex-col items-center rounded-lg p-0.5 ${
+                hasCaptured ? 'bg-stone-800/60' : 'opacity-30'
               }`}
             >
-              <div className="w-10 h-10 flex items-center justify-center">
+              {/* Circular clipped image */}
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-stone-900 ring-1 ring-stone-700/50 flex-shrink-0">
                 {imgSrc && !failedImgs.has(rank) ? (
                   <img
                     src={imgSrc}
                     alt={theme.pieceNames[rank]}
                     className="w-full h-full object-cover"
-                    style={{ transform: `scale(${getPieceCrop(theme.id, imgSrc).scale}) translate(${getPieceCrop(theme.id, imgSrc).offsetX}%, ${getPieceCrop(theme.id, imgSrc).offsetY}%)` }}
+                    style={crop ? { transform: `scale(${crop.scale}) translate(${crop.offsetX}%, ${crop.offsetY}%)` } : undefined}
                     onError={() => setFailedImgs(prev => new Set(prev).add(rank))}
                   />
                 ) : (
-                  <span style={{ color: display.color }} className="text-lg font-bold">
-                    {theme.pieceEmojis[rank]}
-                  </span>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span style={{ color: display.color }} className="text-sm font-bold">
+                      {theme.pieceEmojis[rank]}
+                    </span>
+                  </div>
                 )}
               </div>
-              <span className={`text-[10px] font-bold tabular-nums ${hasCaptured ? highlightColor : 'text-gray-600'}`}>
+              {/* Count below */}
+              <span className={`text-[9px] font-bold tabular-nums mt-0.5 ${hasCaptured ? highlightColor : 'text-gray-600'}`}>
                 {captured}/{def.quantity}
               </span>
             </div>
