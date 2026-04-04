@@ -1,0 +1,49 @@
+/* Kingdom Theme - Medieval Castle */
+.theme-kingdom-board {
+  background:
+    linear-gradient(135deg, rgba(74, 70, 64, 0.3) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(74, 70, 64, 0.3) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(74, 70, 64, 0.3) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(74, 70, 64, 0.3) 25%, transparent 25%),
+    #3a3632;
+  background-size: 20px 20px;
+  background-position: 10px 0, 10px 0, 0 0, 0 0;
+}
+
+.theme-kingdom-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(251, 191, 36, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  animation: torchFlicker 4s ease-in-out infinite alternate;
+  border-radius: inherit;
+}
+
+@keyframes torchFlicker {
+  0% { opacity: 0.6; }
+  25% { opacity: 0.8; }
+  50% { opacity: 0.5; }
+  75% { opacity: 0.9; }
+  100% { opacity: 0.7; }
+}
+
+.lake-moat-animated {
+  background: radial-gradient(circle, #2a3d5c, #1e2d4a, #152238);
+  position: relative;
+  overflow: hidden;
+}
+
+.lake-moat-animated::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  animation: moatRippleAnim 4s ease-in-out infinite;
+}
+
+@keyframes moatRippleAnim {
+  0%, 100% { transform: scale(0.8); opacity: 0.4; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}

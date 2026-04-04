@@ -1,0 +1,51 @@
+/* Greek Theme - Dark Olympian */
+.theme-greek-board {
+  background:
+    linear-gradient(135deg, rgba(212, 175, 55, 0.06) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(212, 175, 55, 0.04) 0%, transparent 50%),
+    linear-gradient(160deg, #1a2844 0%, #162040 30%, #1e2d50 60%, #1a2844 100%);
+  position: relative;
+}
+
+.theme-greek-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(45deg, transparent 40%, rgba(212, 175, 55, 0.06) 50%, transparent 60%);
+  background-size: 30px 30px;
+  pointer-events: none;
+  border-radius: inherit;
+  animation: marbleSheen 8s linear infinite;
+}
+
+@keyframes marbleSheen {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+.lake-styx-animated {
+  background: radial-gradient(circle, #4a2d7a, #2d1a4a, #1a0d2e);
+  position: relative;
+  overflow: hidden;
+}
+
+.lake-styx-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(138, 43, 226, 0.2) 30%,
+    rgba(168, 85, 247, 0.3) 50%,
+    rgba(138, 43, 226, 0.2) 70%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: styxFlow 3s ease-in-out infinite;
+}
+
+@keyframes styxFlow {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 0% 100%; }
+}

@@ -1,0 +1,43 @@
+/* Pirate Theme - Wooden Ship Deck */
+.theme-pirate-board {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #6b4226 0px,
+      #7a4f2e 2px,
+      #6b4226 4px,
+      #5a3820 6px,
+      #6b4226 8px
+    );
+  position: relative;
+}
+
+.theme-pirate-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.15) 100%),
+    linear-gradient(90deg, rgba(0,0,0,0.1) 0%, transparent 5%, transparent 95%, rgba(0,0,0,0.1) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.lake-whirlpool-animated {
+  background: radial-gradient(circle, #1a8aaa, #1a6b8a, #0d4f66);
+  position: relative;
+  overflow: hidden;
+}
+
+.lake-whirlpool-animated::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(59, 200, 246, 0.3) 25%, transparent 50%, rgba(59, 200, 246, 0.2) 75%, transparent 100%);
+  animation: whirlpoolSpin 3s linear infinite;
+}
+
+@keyframes whirlpoolSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
