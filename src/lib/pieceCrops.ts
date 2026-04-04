@@ -1,0 +1,47 @@
+export const PIECE_CROPS: Record<string, { scale: number; offsetX: number; offsetY: number }> = {
+  'kingdom-king.png': { scale: 1.4, offsetX: 0, offsetY: 8 },
+  'kingdom-queen.png': { scale: 1.5, offsetX: 0, offsetY: 11 },
+  'kingdom-prince.png': { scale: 1.65, offsetX: 0, offsetY: 7 },
+  'kingdom-kingsguard.png': { scale: 1.7, offsetX: -2, offsetY: 7 },
+  'kingdom-archer.png': { scale: 1.15, offsetX: 0, offsetY: 0 },
+  'kingdom-swordsman.png': { scale: 1.6, offsetX: 0, offsetY: 11 },
+  'kingdom-jester.png': { scale: 2, offsetX: 5, offsetY: 15 },
+  'kingdom-blacksmith.png': { scale: 2, offsetX: 0, offsetY: 18 },
+  'kingdom-horseman.png': { scale: 1.6, offsetX: -1, offsetY: 11 },
+  'kingdom-tower-guard.png': { scale: 1.65, offsetX: 9, offsetY: 8 },
+  'kingdom-assassin.png': { scale: 1.4, offsetX: 0, offsetY: 0 },
+  'kingdom-spike-pit.png': { scale: 1.55, offsetX: 1, offsetY: 8 },
+  'kingdom-princess.png': { scale: 1.8, offsetX: 0, offsetY: 18 },
+  'pirate-kraken.png': { scale: 1.55, offsetX: 0, offsetY: 0 },
+  'pirate-pirate-king.png': { scale: 1.15, offsetX: 0, offsetY: 0 },
+  'pirate-megalodon.png': { scale: 1.25, offsetX: 0, offsetY: 0 },
+  'pirate-shark-rider.png': { scale: 1.7, offsetX: -4, offsetY: 7 },
+  'pirate-musketeer.png': { scale: 1.8, offsetX: 2, offsetY: 11 },
+  'pirate-buccaneer.png': { scale: 1.65, offsetX: 0, offsetY: 9 },
+  'pirate-crewmate.png': { scale: 1.5, offsetX: 0, offsetY: 1 },
+  'pirate-diver.png': { scale: 1.7, offsetX: -7, offsetY: 13 },
+  'pirate-parrot.png': { scale: 1.65, offsetX: 0, offsetY: 14 },
+  'pirate-watchman.png': { scale: 2.45, offsetX: -3, offsetY: 20 },
+  'pirate-stowaway.png': { scale: 2.25, offsetX: 0, offsetY: 14 },
+  'pirate-sea-mine.png': { scale: 1.25, offsetX: 0, offsetY: 0 },
+  'pirate-treasure-chest.png': { scale: 1.35, offsetX: -1, offsetY: 0 },
+  'greek-zeus.png': { scale: 1.35, offsetX: 0, offsetY: 0 },
+  'greek-poseidon.png': { scale: 1.4, offsetX: 5, offsetY: 1 },
+  'greek-hades.png': { scale: 1.3, offsetX: 0, offsetY: 7 },
+  'greek-athena.png': { scale: 1.55, offsetX: 1, offsetY: 10 },
+  'greek-apollo.png': { scale: 1.8, offsetX: -4, offsetY: 15 },
+  'greek-ares.png': { scale: 2.1, offsetX: 0, offsetY: 3 },
+  'greek-centaur.png': { scale: 1.35, offsetX: -2, offsetY: 1 },
+  'greek-hephaestus.png': { scale: 1.9, offsetX: -3, offsetY: 11 },
+  'greek-pegasus.png': { scale: 1.8, offsetX: 0, offsetY: 10 },
+  'greek-oracle.png': { scale: 1.8, offsetX: 0, offsetY: 11 },
+  'greek-kronos.png': { scale: 1.6, offsetX: 0, offsetY: 6 },
+  'greek-medusa-stone.png': { scale: 1.45, offsetX: 0, offsetY: 4 },
+  'greek-pandoras-box.png': { scale: 1.45, offsetX: 0, offsetY: 4 },
+};
+
+export function getPieceCrop(themeId: string, imagePath: string) {
+  const filename = imagePath.split('/').pop() || '';
+  const key = `${themeId}-${filename}`;
+  return PIECE_CROPS[key] || { scale: 1.15, offsetX: 0, offsetY: 0 };
+}

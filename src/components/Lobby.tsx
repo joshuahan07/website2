@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-
 interface LobbyProps {
   onCreateGame: (nickname: string, theme: string) => void;
   onJoinGame: (code: string, nickname: string) => void;
@@ -249,6 +248,7 @@ export default function Lobby({
               <p className="text-center text-[#A9AFB8]/50 text-xs mt-8">
                 No account required. Play instantly.
               </p>
+
             </>
           )}
         </div>

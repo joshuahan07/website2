@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Rank } from '@/types/game';
 import { PIECE_DEFINITIONS, RANK_DISPLAY } from '@/lib/pieces';
 import { useTheme } from '@/lib/ThemeContext';
+import { getPieceCrop } from '@/lib/pieceCrops';
 
 interface SetupTrayProps {
   selectedRank: Rank | null;
@@ -69,7 +70,8 @@ export default function SetupTray({
                 <img
                   src={imgSrc}
                   alt={theme.pieceNames[rank]}
-                  className="w-full h-full object-cover scale-[1.15]"
+                  className="w-full h-full object-cover"
+                  style={{ transform: `scale(${getPieceCrop(theme.id, imgSrc || '').scale}) translate(${getPieceCrop(theme.id, imgSrc || '').offsetX}%, ${getPieceCrop(theme.id, imgSrc || '').offsetY}%)` }}
                   onError={() => setFailedImgs(prev => new Set(prev).add(rank))}
                 />
               ) : (

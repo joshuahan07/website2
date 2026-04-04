@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ClientPiece, Rank } from '@/types/game';
 import { RANK_DISPLAY } from '@/lib/pieces';
 import { useTheme } from '@/lib/ThemeContext';
+import { getPieceCrop } from '@/lib/pieceCrops';
 
 interface PieceProps {
   piece: ClientPiece;
@@ -26,6 +27,12 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
   const isIdle = !isSelected && !revealing;
   const isOwnFlag = isOwn && rank === 'F';
   const isOwnBomb = isOwn && rank === 'B';
+
+  // Crop settings per piece
+  const crop = pieceImage ? getPieceCrop(theme.id, pieceImage) : { scale: 1.15, offsetX: 0, offsetY: 0 };
+  const pieceScale = crop.scale;
+  const pieceOffsetX = crop.offsetX;
+  const pieceOffsetY = crop.offsetY;
 
   // Ring color
   const ringColor = isOwn
@@ -69,7 +76,8 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
                   src={pieceImage}
                   alt={display.symbol}
                   fill
-                  className="object-cover drop-shadow-md scale-[1.15]"
+                  className="object-cover drop-shadow-md"
+                  style={{ transform: `scale(${pieceScale}) translate(${pieceOffsetX}%, ${pieceOffsetY}%)` }}
                   onError={() => setImgFailed(true)}
                   sizes="64px"
                 />
