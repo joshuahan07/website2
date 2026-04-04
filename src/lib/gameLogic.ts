@@ -501,25 +501,76 @@ export function autoPlacePieces(player: PlayerNumber): PlacedPiece[] {
   const pieces = generatePieceSet(player);
   const startRow = player === 1 ? 5 : 0;
   const endRow = player === 1 ? 7 : 2;
+  // Back row is the furthest from the opponent
+  const backRow = player === 1 ? 7 : 0;
 
-  const positions: Square[] = [];
+  // Build all available positions
+  const allPositions: Square[] = [];
+  const backRowPositions: Square[] = [];
   for (let r = startRow; r <= endRow; r++) {
     for (let c = 0; c < BOARD_COLS; c++) {
       if (!isLake(r, c)) {
-        positions.push({ row: r, col: c });
+        allPositions.push({ row: r, col: c });
+        if (r === backRow) backRowPositions.push({ row: r, col: c });
       }
     }
   }
 
-  // Shuffle positions
-  for (let i = positions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [positions[i], positions[j]] = [positions[j], positions[i]];
+  const used = new Set<string>();
+  const placed: PlacedPiece[] = [];
+
+  const placeAt = (piece: typeof pieces[0], pos: Square) => {
+    placed.push({ ...piece, row: pos.row, col: pos.col });
+    used.add(`${pos.row},${pos.col}`);
+  };
+
+  const getAvailable = (positions: Square[]) =>
+    positions.filter(p => !used.has(`${p.row},${p.col}`));
+
+  const pickRandom = (positions: Square[]) => {
+    const avail = getAvailable(positions);
+    return avail[Math.floor(Math.random() * avail.length)];
+  };
+
+  // 1. Place flag on a random back row position
+  const flag = pieces.find(p => p.rank === 'F')!;
+  const flagPos = pickRandom(backRowPositions);
+  placeAt(flag, flagPos);
+
+  // 2. Place bombs near the flag (adjacent positions preferred)
+  const bombs = pieces.filter(p => p.rank === 'B');
+  const getAdjacentPositions = (pos: Square) => {
+    const adj: Square[] = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const r = pos.row + dr;
+        const c = pos.col + dc;
+        if (r >= startRow && r <= endRow && c >= 0 && c < BOARD_COLS && !isLake(r, c)) {
+          adj.push({ row: r, col: c });
+        }
+      }
+    }
+    return adj;
+  };
+
+  const flagAdjacent = getAdjacentPositions(flagPos);
+  for (const bomb of bombs) {
+    // Try adjacent to flag first, then any available
+    const adjAvail = getAvailable(flagAdjacent);
+    if (adjAvail.length > 0) {
+      const pos = adjAvail[Math.floor(Math.random() * adjAvail.length)];
+      placeAt(bomb, pos);
+    } else {
+      placeAt(bomb, pickRandom(allPositions));
+    }
   }
 
-  return pieces.map((piece, i) => ({
-    ...piece,
-    row: positions[i].row,
-    col: positions[i].col,
-  }));
+  // 3. Place remaining pieces randomly
+  const remaining = pieces.filter(p => p.rank !== 'F' && p.rank !== 'B');
+  for (const piece of remaining) {
+    placeAt(piece, pickRandom(allPositions));
+  }
+
+  return placed;
 }
