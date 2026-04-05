@@ -56,25 +56,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
         </div>
       ),
     },
-    // Page 2: Ranks
-    {
-      title: 'Piece Ranks',
-      content: (
-        <div className="space-y-1.5">
-          <p className="text-xs text-white/40 mb-3">Higher number = stronger piece</p>
-          {['10', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0'].map(rank => (
-            <div key={rank} className="flex items-center gap-3 bg-white/[0.02] rounded-lg px-3 py-1.5">
-              <PieceIcon rank={rank} size="w-7 h-7" />
-              <span className="text-white/80 text-xs font-semibold flex-1">{n(rank)}</span>
-              <span className="text-white/30 text-[10px] font-mono w-6 text-right">
-                {rank === '0' ? 'Spy' : rank}
-              </span>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    // Page 3: Special pieces
+    // Page 2: Special pieces
     {
       title: 'Special Pieces',
       content: (
@@ -87,7 +69,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 0 — weakest piece</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">The only piece that can <span className="text-white">kill the {n('10')}</span> (rank 10) — but only when <span className="text-white">attacking first</span>. If the {n('10')} attacks the {n('0')}, the {n('0')} dies.</p>
+            <p className="text-xs text-white/50">The <span className="text-white">weakest piece</span> — dies to everything. But it has one trick: it can <span className="text-white">kill the {n('10')}</span> (rank 10) when <span className="text-white">attacking first</span>. If the {n('10')} attacks the {n('0')}, the {n('0')} dies.</p>
           </div>
 
           <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
@@ -120,7 +102,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 1</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">When moved next to an enemy piece, you can <span className="text-white">predict its rank</span>. If you guess correctly, the enemy piece is <span className="text-white">instantly destroyed</span>!</p>
+            <p className="text-xs text-white/50">After moving next to an enemy piece, you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> — without combat! A powerful tool for eliminating threats safely.</p>
           </div>
         </div>
       ),

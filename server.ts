@@ -405,7 +405,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
     // ── PLAYER READY ─────────────────────────────────────
 
-    socket.on(C2S.PLAYER_READY, () => {
+    socket.on(C2S.PLAYER_READY, (data?: { pieces?: PlacedPiece[] }) => {
       const roomCode = socketToRoom.get(socket.id);
       if (!roomCode) return;
       const game = games.get(roomCode);
@@ -414,10 +414,18 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       const player = game.players.find(p => p.id === socket.id);
       if (!player) return;
 
+      // Accept pieces directly with the ready signal as fallback
+      if (data?.pieces && data.pieces.length === 30) {
+        const validation = validateSetup(data.pieces, player.number);
+        if (validation.valid) {
+          game.setupPieces[player.number] = data.pieces;
+        }
+      }
+
       // Validate pieces are placed
       const pieces = game.setupPieces[player.number];
-      if (pieces.length !== 30) {
-        socket.emit(S2C.ERROR, { message: 'Place all 30 pieces before readying up' });
+      if (!pieces || pieces.length !== 30) {
+        socket.emit(S2C.ERROR, { message: `Place all 30 pieces before readying up (currently ${pieces?.length || 0})` });
         return;
       }
 

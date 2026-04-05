@@ -402,7 +402,10 @@ export default function GamePage() {
     if (setupPieces.length !== TOTAL_PIECES) return;
     setIsReady(true);
     socket?.emit(C2S.PLACE_PIECES, { pieces: setupPieces });
-    socket?.emit(C2S.PLAYER_READY);
+    // Small delay to ensure PLACE_PIECES processes first, then send pieces again with READY as backup
+    setTimeout(() => {
+      socket?.emit(C2S.PLAYER_READY, { pieces: setupPieces });
+    }, 100);
   }, [setupPieces]);
 
   const handlePlayAgain = useCallback(() => {
