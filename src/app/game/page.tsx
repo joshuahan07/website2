@@ -206,7 +206,7 @@ export default function GamePage() {
         setRevealEvent(null);
         setRevealingSquares(new Set());
         revealTimerRef.current = null;
-      }, event.duration + showDelay);
+      }, event.duration + showDelay - 500);
     });
 
     socket.on(S2C.SPOTTER_PROMPT, (data: { spotterPosition: Square; adjacentTargets: Square[] }) => {
@@ -256,6 +256,8 @@ export default function GamePage() {
   // Handle square clicks during PLAYING phase
   const handleBoardClick = useCallback((row: number, col: number) => {
     if (!gameState) return;
+    // Block moves while battle card is showing
+    if (revealEvent) return;
 
     // SETUP PHASE — place pieces
     if (gameState.phase === 'setup') {
