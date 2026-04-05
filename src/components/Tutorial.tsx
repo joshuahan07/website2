@@ -50,7 +50,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
             <h4 className="text-sm font-bold text-amber-400 mb-2">Win Condition</h4>
             <div className="flex items-center gap-3">
               <PieceIcon rank="F" />
-              <p className="text-xs text-white/50">Capture the enemy's <span className="text-white">{n('F')}</span> 🏆 to win the game!</p>
+              <p className="text-xs text-white/50">Capture the enemy&apos;s <span className="text-white">{n('F')}</span> 🏆 to win the game!</p>
             </div>
           </div>
         </div>
