@@ -21,6 +21,8 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SetupTray from '@/components/SetupTray';
 import CoinFlip from '@/components/CoinFlip';
 import Tutorial from '@/components/Tutorial';
+import LoadingScreen from '@/components/LoadingScreen';
+import { SFX } from '@/lib/sounds';
 import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
 import NotificationManager from '@/components/api/NotificationManager';
@@ -73,6 +75,7 @@ export default function GamePage() {
   const [narrationMuted, setNarrationMuted] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialShownRef = useRef(false);
+  const gameStartTimeRef = useRef<number>(0);
 
   // API refs
   const narrationRef = useRef<NarrationPlayerHandle>(null);
@@ -128,6 +131,11 @@ export default function GamePage() {
     }
 
     socket.on(S2C.GAME_STATE, (state: ClientGameState) => {
+      // Track game start time
+      if (state.phase === 'playing' && !gameStartTimeRef.current) {
+        gameStartTimeRef.current = Date.now();
+      }
+
       // Show tutorial once when entering setup phase
       if (state.phase === 'setup' && !tutorialShownRef.current) {
         tutorialShownRef.current = true;
@@ -142,6 +150,7 @@ export default function GamePage() {
         if (prev && state.moveLog.length > (prev.moveLog?.length || 0)) {
           const latestMove = state.moveLog[state.moveLog.length - 1];
           if (latestMove && latestMove.player !== myPlayer.current) {
+            SFX.yourTurn();
             setLastMove({ from: latestMove.from, to: latestMove.to });
             setOpponentMove({ from: latestMove.from, to: latestMove.to });
             setTimeout(() => setLastMove(null), 2000);
@@ -179,6 +188,7 @@ export default function GamePage() {
         }
         setRevealingSquares(squares);
         setRevealEvent(event);
+        SFX.combat();
 
         // Trigger narration for the event
         if (event.result) {
@@ -228,6 +238,7 @@ export default function GamePage() {
     });
 
     socket.on(S2C.INVALID_MOVE, (data: { message: string }) => {
+      SFX.error();
       setError(data.message);
       setTimeout(() => setError(null), 3000);
     });
@@ -370,6 +381,7 @@ export default function GamePage() {
       // Try to move
       const isValid = validMoves.some(m => m.row === row && m.col === col);
       if (isValid) {
+        SFX.move();
         socket?.emit(C2S.MAKE_MOVE, {
           from: selectedSquare,
           to: { row, col },
@@ -381,6 +393,7 @@ export default function GamePage() {
     } else {
       // First click — select own piece
       if (clickedPiece && clickedPiece.owner === myPlayer.current) {
+        SFX.select();
         setSelectedSquare({ row, col });
         const piece = clickedPiece as VisiblePiece;
         const moves = getValidMoves(piece, gameState.board as any);
@@ -409,6 +422,7 @@ export default function GamePage() {
 
   const handleReady = useCallback(() => {
     if (setupPieces.length !== TOTAL_PIECES) return;
+    SFX.ready();
     setIsReady(true);
     socket?.emit(C2S.PLACE_PIECES, { pieces: setupPieces });
     // Small delay to ensure PLACE_PIECES processes first, then send pieces again with READY as backup
@@ -483,14 +497,7 @@ export default function GamePage() {
   };
 
   if (!gameState) {
-    return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-amber-400/30 border-t-amber-400 rounded-full spin-slow" />
-          <span className="text-amber-400 text-xl">Connecting...</span>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   const isMyTurn = gameState.currentTurn === myPlayer.current;
@@ -766,10 +773,15 @@ export default function GamePage() {
           winner={gameState.winner}
           myPlayer={myPlayer.current}
           reason={gameState.winReason || ''}
-          onPlayAgain={handlePlayAgain}
+          onPlayAgain={() => router.push('/')}
+          onRematch={() => {
+            handlePlayAgain();
+            gameStartTimeRef.current = 0;
+          }}
           moveCount={gameState.moveLog.length}
           capturedMine={gameState.capturedPieces.mine.length}
           capturedTheirs={gameState.capturedPieces.theirs.length}
+          gameDuration={gameStartTimeRef.current ? Date.now() - gameStartTimeRef.current : undefined}
         />
       )}
     </div>

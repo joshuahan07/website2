@@ -52,8 +52,25 @@ export default function Piece({ piece, isOwn, isSelected, revealing }: PieceProp
         : 'bg-gradient-to-br from-stone-800 to-stone-950'
     : 'bg-black';
 
+  // Tooltip for special pieces (own only)
+  const getTooltip = (): string | null => {
+    if (!isOwn || !rank) return null;
+    switch (rank) {
+      case '0': return `${theme.pieceNames['0']} (Spy) — Kills ${theme.pieceNames['10']} when attacking first. Dies to everything else.`;
+      case '1': return `${theme.pieceNames['1']} (Spotter) — Predict the enemy directly ahead to destroy it.`;
+      case '2': return `${theme.pieceNames['2']} (Scout) — Moves any number of squares in a straight line.`;
+      case '3': return `${theme.pieceNames['3']} (Miner) — Only piece that can defuse ${theme.pieceNames['B']}s.`;
+      case 'B': return `${theme.pieceNames['B']} (Bomb) — Immovable. Destroys attackers except ${theme.pieceNames['3']}.`;
+      case 'F': return `${theme.pieceNames['F']} (Flag) — Immovable. If captured, you lose!`;
+      default: return `${theme.pieceNames[rank]} — Rank ${rank}`;
+    }
+  };
+
+  const tooltip = getTooltip();
+
   return (
-    <div className="w-full h-full flex items-center justify-center select-none relative p-[3px]">
+    <div className="w-full h-full flex items-center justify-center select-none relative p-[3px] group/piece"
+      title={tooltip || undefined}>
       {/* Circular piece container */}
       <div
         className={`
