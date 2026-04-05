@@ -7,17 +7,69 @@ function isSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
+// Find the best male voice available
+function getMaleVoice(): SpeechSynthesisVoice | null {
+  if (!isSupported()) return null;
+  const voices = window.speechSynthesis.getVoices();
+
+  // Preferred male voices in order (deep, dramatic sounding)
+  const preferred = [
+    'Daniel',           // macOS British male - deep & clear
+    'Aaron',            // macOS US male
+    'James',            // Premium male
+    'Google UK English Male',
+    'Microsoft David',  // Windows male
+    'Microsoft Mark',
+    'Google US English',
+    'Alex',             // macOS male
+    'Fred',             // macOS male
+    'Thomas',           // macOS French male
+  ];
+
+  // Try preferred voices first
+  for (const name of preferred) {
+    const voice = voices.find(v => v.name.includes(name));
+    if (voice) return voice;
+  }
+
+  // Fallback: find any English male voice
+  const englishMale = voices.find(v =>
+    v.lang.startsWith('en') &&
+    (v.name.toLowerCase().includes('male') ||
+     v.name.includes('Daniel') ||
+     v.name.includes('David') ||
+     v.name.includes('James') ||
+     v.name.includes('Mark'))
+  );
+  if (englishMale) return englishMale;
+
+  // Fallback: any English voice
+  const english = voices.find(v => v.lang.startsWith('en'));
+  if (english) return english;
+
+  return voices[0] || null;
+}
+
 export default function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
-  // Cancel any ongoing speech on unmount
+  // Load voices (they load async in some browsers)
   useEffect(() => {
+    if (!isSupported()) return;
+
+    const loadVoices = () => {
+      voiceRef.current = getMaleVoice();
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
     return () => {
-      if (isSupported()) {
-        window.speechSynthesis.cancel();
-      }
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.onvoiceschanged = null;
     };
   }, []);
 
@@ -25,15 +77,18 @@ export default function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     (text: string, options?: SpeechOptions) => {
       if (!isSupported() || isMuted) return;
 
-      // Cancel current speech before queuing new utterance
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = options?.rate ?? 1;
-      utterance.pitch = options?.pitch ?? 1;
+      utterance.rate = options?.rate ?? 0.9;     // Slightly slower for dramatic effect
+      utterance.pitch = options?.pitch ?? 0.85;   // Lower pitch for deeper male voice
       utterance.volume = options?.volume ?? 1;
+
+      // Use the found male voice, or a provided override
       if (options?.voice) {
         utterance.voice = options.voice;
+      } else if (voiceRef.current) {
+        utterance.voice = voiceRef.current;
       }
 
       utterance.onstart = () => setIsSpeaking(true);
@@ -55,7 +110,6 @@ export default function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
       if (!prev && isSupported()) {
-        // Muting: stop any current speech
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
       }

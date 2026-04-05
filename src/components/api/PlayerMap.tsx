@@ -8,6 +8,7 @@ interface PlayerMapProps {
   player1: PlayerCoords | null;
   player2: PlayerCoords | null;
   theme: ThemeId;
+  isLoading?: boolean;
 }
 
 const MAP_WIDTH = 250;
@@ -29,7 +30,7 @@ const CONTINENT_PATHS = [
   'M185,80 L205,78 L210,88 L200,95 L188,92 Z',
 ];
 
-export default function PlayerMap({ player1, player2, theme }: PlayerMapProps) {
+export default function PlayerMap({ player1, player2, theme, isLoading }: PlayerMapProps) {
   const t = getTheme(theme);
   const color1 = t.board.playerColors[1];
   const color2 = t.board.playerColors[2];
@@ -138,8 +139,10 @@ export default function PlayerMap({ player1, player2, theme }: PlayerMapProps) {
       <div className="text-xs text-stone-400 text-center">
         {distance !== null ? (
           <span>Battling across {formatDistance(distance)}</span>
+        ) : isLoading ? (
+          <span className="animate-pulse">Locating...</span>
         ) : !player1 && !player2 ? (
-          <span>Location hidden</span>
+          <span>Location unavailable</span>
         ) : !player1 ? (
           <span>Your location hidden</span>
         ) : !player2 ? (

@@ -57,8 +57,69 @@ function findPieceName(
   return null;
 }
 
+// Common speech-to-text misinterpretations
+const MISHEARD_WORDS: Record<string, string> = {
+  'before': 'b4', 'beef or': 'b4', 'be for': 'b4',
+  'see': 'c', 'sea': 'c',
+  'dee': 'd', 'the': 'd',
+  'ee': 'e',
+  'ef': 'f', 'eff': 'f',
+  'gee': 'g', 'ji': 'g', 'jee': 'g',
+  'aitch': 'h', 'age': 'h', 'ache': 'h', 'each': 'h',
+  'eye': 'i', 'aye': 'i',
+  'jay': 'j',
+};
+
+const NUMBER_WORDS: Record<string, string> = {
+  'one': '1', 'won': '1', 'two': '2', 'too': '2',
+  'three': '3', 'tree': '3', 'free': '3',
+  'four': '4', 'for': '4', 'fore': '4',
+  'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'ate': '8',
+};
+
+function normalizeTranscript(raw: string): string {
+  let text = raw;
+
+  // 1. Replace full misheard coordinates like "before" -> "b4"
+  for (const [misheard, correct] of Object.entries(MISHEARD_WORDS)) {
+    if (correct.length > 1) {
+      // Full coordinate replacement (e.g. "before" -> "b4")
+      text = text.replace(new RegExp(`\\b${misheard}\\b`, 'gi'), correct);
+    }
+  }
+
+  // 2. Replace misheard letter names followed by a number word or digit
+  //    "see four" -> "c4", "jay 3" -> "j3", "eye eight" -> "i8"
+  const letterPattern = Object.keys(MISHEARD_WORDS).filter(k => MISHEARD_WORDS[k].length === 1).join('|');
+  const numPattern = Object.keys(NUMBER_WORDS).join('|');
+
+  // misheard-letter + number-word: "see four" -> "c4"
+  text = text.replace(new RegExp(`\\b(${letterPattern})\\s+(${numPattern})\\b`, 'gi'), (_, letter, num) => {
+    const l = MISHEARD_WORDS[letter.toLowerCase()] || letter;
+    const n = NUMBER_WORDS[num.toLowerCase()] || num;
+    return `${l}${n}`;
+  });
+
+  // misheard-letter + digit: "see 4" -> "c4"
+  text = text.replace(new RegExp(`\\b(${letterPattern})\\s+(\\d)\\b`, 'gi'), (_, letter, num) => {
+    const l = MISHEARD_WORDS[letter.toLowerCase()] || letter;
+    return `${l}${num}`;
+  });
+
+  // 3. Real letter + number-word: "b four" -> "b4", "a one" -> "a1"
+  //    But NOT "to" as number word (it's the separator)
+  text = text.replace(/\b([a-jA-J])\s+(one|won|two|too|three|tree|free|four|fore|five|six|seven|eight|ate)\b/gi, (_, letter, num) => {
+    return `${letter}${NUMBER_WORDS[num.toLowerCase()] || num}`;
+  });
+
+  // 4. Real letter + space + digit: "i 3" -> "i3"
+  text = text.replace(/\b([a-jA-J])\s+(\d)\b/g, '$1$2');
+
+  return text;
+}
+
 export function parseCommand(transcript: string, theme: ThemeId): GameCommand | null {
-  const raw = transcript.trim().toLowerCase();
+  const raw = normalizeTranscript(transcript.trim().toLowerCase());
   if (!raw) return null;
 
   // Cancel commands

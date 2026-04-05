@@ -20,6 +20,7 @@ import GameOverModal from '@/components/GameOverModal';
 import ThemeToggle from '@/components/ThemeToggle';
 import SetupTray from '@/components/SetupTray';
 import CoinFlip from '@/components/CoinFlip';
+import Tutorial from '@/components/Tutorial';
 import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
 import NotificationManager from '@/components/api/NotificationManager';
@@ -69,10 +70,13 @@ export default function GamePage() {
   const [coinFlip, setCoinFlip] = useState<{ player1Name: string; player2Name: string; winner: 1 | 2 } | null>(null);
   const [opponentMove, setOpponentMove] = useState<{ from: Square; to: Square } | null>(null);
   const [opponentCoords, setOpponentCoords] = useState<PlayerCoords | null>(null);
+  const [narrationMuted, setNarrationMuted] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const tutorialShownRef = useRef(false);
 
   // API refs
   const narrationRef = useRef<NarrationPlayerHandle>(null);
-  const { latitude, longitude } = useGeolocation();
+  const { latitude, longitude, isLoading: geoLoading, error: geoError } = useGeolocation();
 
   // Setup state
   const [setupPieces, setSetupPieces] = useState<PlacedPiece[]>([]);
@@ -116,6 +120,15 @@ export default function GamePage() {
     }
 
     socket.on(S2C.GAME_STATE, (state: ClientGameState) => {
+      // Show tutorial once when entering setup phase
+      if (state.phase === 'setup' && !tutorialShownRef.current) {
+        tutorialShownRef.current = true;
+        // Check if user has seen tutorial before
+        if (!sessionStorage.getItem('tutorial-seen')) {
+          setShowTutorial(true);
+        }
+      }
+
       // Detect opponent's move from new move log entries
       setGameState(prev => {
         if (prev && state.moveLog.length > (prev.moveLog?.length || 0)) {
@@ -505,6 +518,16 @@ export default function GamePage() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => {
+              narrationRef.current?.toggleMute();
+              setNarrationMuted(!narrationMuted);
+            }}
+            className="text-xs bg-stone-800 px-2 py-1 rounded hover:bg-stone-700 transition-all cursor-pointer"
+            title={narrationMuted ? 'Unmute narration' : 'Mute narration'}
+          >
+            {narrationMuted ? '🔇' : '🔊'}
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
@@ -691,6 +714,14 @@ export default function GamePage() {
         />
       )}
 
+      {/* Tutorial */}
+      {showTutorial && (
+        <Tutorial onClose={() => {
+          setShowTutorial(false);
+          sessionStorage.setItem('tutorial-seen', '1');
+        }} />
+      )}
+
       {/* API Components */}
       <NarrationPlayer ref={narrationRef} theme={theme.id} />
       <NotificationManager
@@ -705,13 +736,14 @@ export default function GamePage() {
       />
       <VoiceCommander theme={theme.id} onCommand={handleVoiceCommand} />
 
-      {/* Player Map - show in right sidebar during playing */}
-      {gameState.phase === 'playing' && (latitude || opponentCoords) && (
-        <div className="fixed bottom-4 left-4 z-30">
+      {/* Player Map - always show during playing */}
+      {gameState.phase === 'playing' && (
+        <div className="fixed bottom-4 right-4 z-30">
           <PlayerMap
             player1={latitude && longitude ? { latitude, longitude } : null}
             player2={opponentCoords}
             theme={theme.id}
+            isLoading={geoLoading}
           />
         </div>
       )}
