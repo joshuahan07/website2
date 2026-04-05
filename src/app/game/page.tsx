@@ -217,6 +217,12 @@ export default function GamePage() {
         setRevealingSquares(new Set());
         revealTimerRef.current = null;
       }, event.duration + showDelay - 500);
+
+      // Safety fallback: force clear after 8 seconds max no matter what
+      setTimeout(() => {
+        setRevealEvent(null);
+        setRevealingSquares(new Set());
+      }, 8000);
     });
 
     socket.on(S2C.SPOTTER_PROMPT, (data: { spotterPosition: Square; adjacentTargets: Square[] }) => {
@@ -400,7 +406,7 @@ export default function GamePage() {
         setValidMoves(moves);
       }
     }
-  }, [gameState, selectedSquare, validMoves, setupPieces, selectedRank, isReady]);
+  }, [gameState, selectedSquare, validMoves, setupPieces, selectedRank, isReady, revealEvent]);
 
   const handleSpotterPredict = useCallback((target: Square, rank: Rank) => {
     if (!spotterData) return;

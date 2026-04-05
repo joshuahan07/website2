@@ -188,20 +188,50 @@ export default function RevealAnimation({ event }: RevealAnimationProps) {
             {event.spotterResult && (
               <div className="mt-6 animate-scale-in">
                 <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
-                  {event.spotterResult.predictedRank && (
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white/40 text-sm">Predicted</span>
-                      <span className="font-bold text-cyan-300">
-                        {theme.pieceEmojis[event.spotterResult.predictedRank]} {theme.pieceNames[event.spotterResult.predictedRank]}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-white/40 text-sm">Actual</span>
-                    <span className="font-bold text-white">
-                      {theme.pieceEmojis[event.spotterResult.targetPiece.rank]} {theme.pieceNames[event.spotterResult.targetPiece.rank]}
-                    </span>
-                  </div>
+                  {event.spotterResult.predictedRank && (() => {
+                    const predImg = theme.pieceImages[event.spotterResult.predictedRank!];
+                    const predCrop = predImg ? getPieceCrop(theme.id, predImg) : null;
+                    return (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-white/40 text-sm">Predicted</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-cyan-400/40 bg-stone-900">
+                            {predImg ? (
+                              <img src={predImg} alt="" className="w-full h-full object-cover"
+                                style={predCrop ? { transform: `scale(${predCrop.scale}) translate(${predCrop.offsetX}%, ${predCrop.offsetY}%)` } : undefined} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm">{theme.pieceEmojis[event.spotterResult!.predictedRank!]}</div>
+                            )}
+                          </div>
+                          <span className="font-bold text-cyan-300 text-sm">
+                            {theme.pieceNames[event.spotterResult!.predictedRank!]}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {(() => {
+                    const actImg = theme.pieceImages[event.spotterResult.targetPiece.rank];
+                    const actCrop = actImg ? getPieceCrop(theme.id, actImg) : null;
+                    return (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-white/40 text-sm">Actual</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/20 bg-stone-900">
+                            {actImg ? (
+                              <img src={actImg} alt="" className="w-full h-full object-cover"
+                                style={actCrop ? { transform: `scale(${actCrop.scale}) translate(${actCrop.offsetX}%, ${actCrop.offsetY}%)` } : undefined} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm">{theme.pieceEmojis[event.spotterResult!.targetPiece.rank]}</div>
+                            )}
+                          </div>
+                          <span className="font-bold text-white text-sm">
+                            {theme.pieceNames[event.spotterResult.targetPiece.rank]}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className={`text-center py-2 rounded-xl font-black text-base ${
                     event.spotterResult.correct
                       ? 'bg-green-500/10 text-green-400 border border-green-500/20'
