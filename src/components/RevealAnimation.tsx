@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RevealEvent } from '@/types/game';
 import { RANK_DISPLAY } from '@/lib/pieces';
 import { useTheme } from '@/lib/ThemeContext';
+import { getPieceCrop } from '@/lib/pieceCrops';
 
 interface RevealAnimationProps {
   event: RevealEvent;
@@ -22,185 +23,197 @@ export default function RevealAnimation({ event }: RevealAnimationProps) {
     return theme.revealTitles[key] || 'REVEAL!';
   };
 
-  const getColor = () => {
-    switch (event.type) {
-      case 'spy_kills_marshal': return 'text-purple-400';
-      case 'miner_defuses_bomb': return 'text-orange-400';
-      case 'scout_move': return 'text-green-400';
-      case 'spotter_reveal': return 'text-cyan-400';
-      default: return 'text-red-400';
-    }
-  };
-
-  const getBgClass = () => {
-    switch (event.type) {
-      case 'spy_kills_marshal': return 'bg-spy';
-      case 'miner_defuses_bomb': return 'bg-miner';
-      default: return '';
-    }
-  };
-
   const isCombat = event.pieces.length === 2 && event.result;
-
-  const sparks = Array.from({ length: 8 }, (_, i) => ({
-    x: `${(Math.cos((i / 8) * Math.PI * 2) * 40).toFixed(0)}px`,
-    y: `${(Math.sin((i / 8) * Math.PI * 2) * 40).toFixed(0)}px`,
-    color: event.type === 'spy_kills_marshal' ? '#8b5cf6'
-      : event.type === 'miner_defuses_bomb' ? '#f97316'
-      : '#fbbf24',
-    delay: `${(i * 0.05).toFixed(2)}s`,
-  }));
-
-  const getSpyKillDescription = () => {
-    const spyName = theme.pieceNames['0'];
-    const marshalName = theme.pieceNames['10'];
-    return `The ${spyName} strikes from the shadows and slays the mighty ${marshalName}!`;
-  };
-
   const isBothDestroyed = event.result?.winner === 'both_destroyed';
+  const isSpotterReveal = event.type === 'spotter_reveal';
 
-  // Determine which piece index is the bomb for miner_defuses_bomb
   const bombPieceIndex = event.type === 'miner_defuses_bomb'
     ? event.pieces.findIndex(p => p.rank === 'B')
     : -1;
 
+  // Get accent color based on event type
+  const accentColor = (() => {
+    switch (event.type) {
+      case 'spy_kills_marshal': return { text: 'text-purple-400', bg: 'from-purple-500/20', border: 'border-purple-500/30', glow: 'shadow-purple-500/20' };
+      case 'miner_defuses_bomb': return { text: 'text-orange-400', bg: 'from-orange-500/20', border: 'border-orange-500/30', glow: 'shadow-orange-500/20' };
+      case 'spotter_reveal': return { text: 'text-cyan-400', bg: 'from-cyan-500/20', border: 'border-cyan-500/30', glow: 'shadow-cyan-500/20' };
+      default: return { text: 'text-red-400', bg: 'from-red-500/20', border: 'border-red-500/30', glow: 'shadow-red-500/20' };
+    }
+  })();
+
   return (
-    <div className="fixed left-0 right-0 bottom-0 bg-black/85 flex items-center justify-center z-40 pointer-events-none backdrop-blur-[2px]" style={{ top: '44px' }}>
+    <div className="fixed left-0 right-0 bottom-0 flex items-center justify-center z-40 pointer-events-none" style={{ top: '44px' }}>
+      {/* Dark backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
-      <div className={`animate-bounce-in bg-stone-900/95 border border-stone-600 rounded-xl
-        p-6 shadow-2xl text-center max-w-sm spark-container ${getBgClass()}`}>
+      {/* Radial glow behind card */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className={`w-[400px] h-[400px] rounded-full bg-gradient-radial ${accentColor.bg} to-transparent blur-3xl opacity-50`} />
+      </div>
 
-        {(event.result || event.spotterResult) && sparks.map((s, i) => (
-          <div
-            key={i}
-            className="spark"
-            style={{
-              '--spark-x': s.x,
-              '--spark-y': s.y,
-              background: s.color,
-              left: '50%',
-              top: '40%',
-              animationDelay: s.delay,
-            } as React.CSSProperties}
-          />
-        ))}
+      {/* Main card */}
+      <div className="relative animate-bounce-in max-w-md w-full mx-6">
+        <div className={`relative rounded-3xl overflow-hidden border ${accentColor.border} shadow-2xl ${accentColor.glow}`}>
+          {/* Card background */}
+          <div className="absolute inset-0 bg-[#0a0d14]/95 backdrop-blur-xl" />
+          {/* Top accent line */}
+          <div className={`absolute top-0 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-current to-transparent ${accentColor.text} opacity-40`} />
 
-        <h3 className={`text-2xl font-black mb-4 ${getColor()} text-glow tracking-wider`}>
-          {getTitle()}
-        </h3>
+          <div className="relative p-8">
+            {/* Title */}
+            <h3 className={`text-3xl font-black mb-6 ${accentColor.text} tracking-wider text-center`}>
+              {getTitle()}
+            </h3>
 
-        <div className="flex items-center justify-center gap-3">
-          {event.pieces.map((p, i) => {
-            const display = RANK_DISPLAY[p.rank];
-            const isP1 = p.owner === 1;
-            const survived = event.result
-              ? (i === 0 ? event.result.attackerSurvived : event.result.defenderSurvived)
-              : true;
-            const pieceImage = theme.pieceImages[p.rank];
-            const hasImgError = imgErrors[i];
+            {/* Pieces */}
+            <div className="flex items-center justify-center gap-4">
+              {event.pieces.map((p, i) => {
+                const display = RANK_DISPLAY[p.rank];
+                const isP1 = p.owner === 1;
+                const survived = event.result
+                  ? (i === 0 ? event.result.attackerSurvived : event.result.defenderSurvived)
+                  : true;
+                const pieceImage = theme.pieceImages[p.rank];
+                const hasImgError = imgErrors[i];
+                const crop = pieceImage ? getPieceCrop(theme.id, pieceImage) : null;
 
-            const slideClass = isCombat
-              ? (i === 0 ? 'combat-slide-left' : 'combat-slide-right')
-              : '';
+                const slideClass = isCombat
+                  ? (i === 0 ? 'combat-slide-left' : 'combat-slide-right')
+                  : '';
 
-            const isSpotterReveal = event.type === 'spotter_reveal';
+                const rankLabel = p.rank === '0' ? 'Spy' : p.rank === 'B' ? '💥' : p.rank === 'F' ? '🏆' : p.rank;
 
-            return (
-              <div key={i} className="flex items-center gap-3">
-                {i === 1 && isCombat && (
-                  <>
-                    {isBothDestroyed && (
-                      <div className="shockwave" />
+                return (
+                  <div key={i} className="flex items-center gap-4">
+                    {i === 1 && isCombat && (
+                      <>
+                        {isBothDestroyed && <div className="shockwave" />}
+                        <div className="vs-text text-3xl font-black text-white/20 mx-2">
+                          VS
+                        </div>
+                      </>
                     )}
-                    <div className="vs-text text-2xl font-black text-amber-400 drop-shadow-lg mx-1">
-                      VS
+                    <div className={`text-center ${slideClass}`}>
+                      {/* Piece circle */}
+                      <div className="relative">
+                        <div
+                          className={`
+                            w-24 h-24 rounded-full overflow-hidden
+                            ring-[3px] transition-all relative
+                            ${isP1 ? 'ring-blue-400/70' : 'ring-red-500/70'}
+                            ${!survived ? 'piece-shatter' : 'animate-scale-in'}
+                          `}
+                          style={{
+                            boxShadow: isP1
+                              ? '0 0 20px rgba(59,130,246,0.2), inset 0 0 15px rgba(0,0,0,0.4)'
+                              : '0 0 20px rgba(239,68,68,0.2), inset 0 0 15px rgba(0,0,0,0.4)',
+                          }}
+                        >
+                          {pieceImage && !hasImgError ? (
+                            <img
+                              src={pieceImage}
+                              alt={display.symbol}
+                              className="w-full h-full object-cover"
+                              style={crop ? {
+                                transform: `scale(${crop.scale}) translate(${crop.offsetX}%, ${crop.offsetY}%)`,
+                              } : undefined}
+                              onError={() => handleImgError(i)}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-stone-900">
+                              <span className="text-3xl font-bold" style={{ color: display.color }}>
+                                {theme.pieceEmojis[p.rank]}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Defuse spark */}
+                          {event.type === 'miner_defuses_bomb' && i === bombPieceIndex && (
+                            <div className="defuse-spark" />
+                          )}
+                          {/* Spotter beam/fizzle */}
+                          {isSpotterReveal && event.spotterResult && i === 1 && (
+                            <div className={event.spotterResult.correct ? 'spotter-beam' : 'spotter-fizzle'} />
+                          )}
+                        </div>
+
+                        {/* Rank badge - like on the board */}
+                        <div className="absolute -top-1 -right-1 z-10 bg-black/90 rounded-full w-7 h-7 flex items-center justify-center border-2 border-stone-600 shadow-lg">
+                          <span className="text-xs font-black text-white">{rankLabel}</span>
+                        </div>
+
+                        {/* Defeated X overlay */}
+                        {!survived && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-5xl font-black text-red-500/60">✕</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name */}
+                      <p className="text-sm font-bold text-white/90 mt-3">
+                        {theme.pieceNames[p.rank]}
+                      </p>
+                      <p className={`text-[10px] font-medium ${isP1 ? 'text-blue-400/70' : 'text-red-400/70'}`}>
+                        {isP1 ? 'Player 1' : 'Player 2'}
+                      </p>
                     </div>
-                  </>
-                )}
-                <div className="text-center">
-                  <div
-                    className={`
-                      relative
-                      ${isCombat ? 'w-20 h-20' : 'w-16 h-16'} rounded-lg flex flex-col items-center justify-center
-                      border-2 transition-all
-                      ${isP1 ? 'bg-blue-900 border-blue-400' : 'bg-red-900 border-red-400'}
-                      ${!survived ? 'piece-shatter' : 'animate-scale-in'}
-                      ${slideClass}
-                    `}
-                  >
-                    {pieceImage && !hasImgError ? (
-                      <img
-                        src={pieceImage}
-                        alt={display.symbol}
-                        className="w-[70%] h-[70%] object-contain drop-shadow-md"
-                        onError={() => handleImgError(i)}
-                      />
-                    ) : (
-                      <span className="text-2xl font-bold drop-shadow-md" style={{ color: display.color }}>
-                        {theme.pieceEmojis[p.rank]}
-                      </span>
-                    )}
-                    <span className="text-[9px] text-gray-300 font-medium">{theme.pieceNames[p.rank]}</span>
-
-                    {/* Rank number overlay */}
-                    <span className="absolute top-0.5 right-1 text-[10px] font-black text-white/70 drop-shadow">
-                      {p.rank !== 'F' && p.rank !== 'B' ? p.rank : ''}
-                    </span>
-
-                    {/* Defuse spark overlay on the bomb piece */}
-                    {event.type === 'miner_defuses_bomb' && i === bombPieceIndex && (
-                      <div className="defuse-spark" />
-                    )}
-
-                    {/* Spotter beam/fizzle overlay */}
-                    {isSpotterReveal && event.spotterResult && i === 1 && (
-                      <div className={event.spotterResult.correct ? 'spotter-beam' : 'spotter-fizzle'} />
-                    )}
                   </div>
-                  <span className={`text-[10px] mt-1 block font-medium ${
-                    isP1 ? 'text-blue-400' : 'text-red-400'
-                  }`}>
-                    Player {p.owner}
-                  </span>
+                );
+              })}
+            </div>
+
+            {/* Result text */}
+            {event.result && (
+              <div className="mt-6 text-center animate-scale-in">
+                <div className="inline-block px-5 py-2 rounded-full bg-white/[0.05] border border-white/10">
+                  <p className="text-base font-black tracking-wide text-white">
+                    {event.result.winner === 'flag_captured' && `🏆 ${theme.pieceNames['F'].toUpperCase()} CAPTURED!`}
+                    {event.result.winner === 'both_destroyed' && '💀 Both Destroyed'}
+                    {event.result.winner === 'attacker' && `${theme.pieceNames[event.result.attacker.rank]} wins!`}
+                    {event.result.winner === 'defender' && `${theme.pieceNames[event.result.defender.rank]} wins!`}
+                  </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            )}
 
-        {event.result && (
-          <p className="mt-4 text-base font-black text-amber-400 tracking-wide animate-scale-in">
-            {event.result.winner === 'flag_captured' && `${theme.pieceNames['F'].toUpperCase()} CAPTURED!`}
-            {event.result.winner === 'both_destroyed' && 'Both destroyed!'}
-            {event.result.winner === 'attacker' && `${theme.pieceEmojis[event.result.attacker.rank]} ${theme.pieceNames[event.result.attacker.rank]} wins!`}
-            {event.result.winner === 'defender' && `${theme.pieceEmojis[event.result.defender.rank]} ${theme.pieceNames[event.result.defender.rank]} wins!`}
-          </p>
-        )}
-
-        {/* Special spy_kills_marshal themed description */}
-        {event.type === 'spy_kills_marshal' && event.result && (
-          <p className="mt-2 text-sm italic text-purple-300/90 animate-scale-in">
-            {getSpyKillDescription()}
-          </p>
-        )}
-
-        {event.spotterResult && (
-          <div className="mt-4 animate-scale-in text-center">
-            {event.spotterResult.predictedRank && (
-              <p className="text-sm text-cyan-300 mb-1">
-                Predicted: <span className="font-black">{theme.pieceEmojis[event.spotterResult.predictedRank]} {theme.pieceNames[event.spotterResult.predictedRank]}</span>
+            {/* Spy kill flavor text */}
+            {event.type === 'spy_kills_marshal' && event.result && (
+              <p className="mt-3 text-sm italic text-purple-300/60 text-center animate-scale-in">
+                The {theme.pieceNames['0']} strikes from the shadows...
               </p>
             )}
-            <p className="text-sm text-stone-400 mb-1">
-              Actual: <span className="font-black text-white">{theme.pieceEmojis[event.spotterResult.targetPiece.rank]} {theme.pieceNames[event.spotterResult.targetPiece.rank]}</span>
-            </p>
-            <p className={`text-base font-black tracking-wide ${
-              event.spotterResult.correct ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {event.spotterResult.correct ? 'CORRECT! Target destroyed!' : 'WRONG!'}
-            </p>
+
+            {/* Spotter result */}
+            {event.spotterResult && (
+              <div className="mt-6 animate-scale-in">
+                <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
+                  {event.spotterResult.predictedRank && (
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white/40 text-sm">Predicted</span>
+                      <span className="font-bold text-cyan-300">
+                        {theme.pieceEmojis[event.spotterResult.predictedRank]} {theme.pieceNames[event.spotterResult.predictedRank]}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-white/40 text-sm">Actual</span>
+                    <span className="font-bold text-white">
+                      {theme.pieceEmojis[event.spotterResult.targetPiece.rank]} {theme.pieceNames[event.spotterResult.targetPiece.rank]}
+                    </span>
+                  </div>
+                  <div className={`text-center py-2 rounded-xl font-black text-base ${
+                    event.spotterResult.correct
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  }`}>
+                    {event.spotterResult.correct ? '✓ CORRECT — Target Destroyed!' : '✕ WRONG'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

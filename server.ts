@@ -671,6 +671,21 @@ app.prepare().then(() => {
       }
     });
 
+    // ── PLAYER LOCATION ────────────────────────────────
+
+    socket.on(C2S.PLAYER_LOCATION, (data: { latitude: number; longitude: number }) => {
+      const roomCode = socketToRoom.get(socket.id);
+      if (!roomCode) return;
+      const game = games.get(roomCode);
+      if (!game) return;
+
+      // Relay to the other player
+      const opponent = game.players.find(p => p.id !== socket.id);
+      if (opponent && opponent.connected) {
+        io.to(opponent.id).emit(S2C.PLAYER_LOCATION, { latitude: data.latitude, longitude: data.longitude });
+      }
+    });
+
     // ── PLAY AGAIN ───────────────────────────────────────
 
     socket.on(C2S.PLAY_AGAIN, () => {

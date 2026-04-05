@@ -278,6 +278,45 @@
   100% { transform: translate(0, 0); }
 }
 
+/* Kingdom lava glow */
+@keyframes lavaGlow {
+  0% { opacity: 0.5; filter: brightness(0.8); }
+  100% { opacity: 1; filter: brightness(1.2); }
+}
+
+/* Kingdom spikes rise and fall */
+@keyframes spikesMove {
+  0%, 100% { transform: translateY(15%); }
+  50% { transform: translateY(0%); }
+}
+
+/* Kingdom ember float */
+@keyframes ember {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-20px) translateX(5px) scale(0); opacity: 0; }
+}
+
+/* Spin for whirlpool */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Greek poison bubble */
+@keyframes poisonBubble {
+  0% { transform: translateY(0) scale(0.3); opacity: 0; }
+  15% { opacity: 0.8; transform: translateY(-20%) scale(0.6); }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-250%) scale(1); opacity: 0; }
+}
+
+/* Greek toxic pulse */
+@keyframes toxicPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* Pirate lose: ship sinking */
 @keyframes pirate-sink {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }

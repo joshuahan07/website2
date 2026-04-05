@@ -35,20 +35,92 @@ export default function Square({
 
   if (lake) {
     return (
-      <div
-        className={`aspect-square rounded-md flex items-center justify-center overflow-hidden theme-transition relative ${theme.board.lakeAnimationClass || theme.board.lakeClass}`}
-        style={{
-          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), inset 0 -2px 6px rgba(0,0,0,0.4)',
-        }}
+      <div className="aspect-square rounded-md overflow-hidden theme-transition relative"
+        style={{ boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), inset 0 -2px 6px rgba(0,0,0,0.4)' }}
       >
-        {/* Diagonal stripes to indicate blocked */}
-        <div
-          className="absolute inset-0 opacity-15"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.15) 4px, rgba(255,255,255,0.15) 6px)',
-          }}
-        />
-        <span className="text-blue-200/25 text-base animate-pulse relative z-10">~</span>
+        {/* Theme-specific lake visuals */}
+        {theme.id === 'kingdom' ? (
+          /* Kingdom: Lava spike pit */
+          <div className="w-full h-full relative bg-[#0a0604]">
+            {/* Lava glow from below */}
+            <div className="absolute inset-0" style={{
+              background: 'radial-gradient(ellipse at 50% 90%, rgba(255,60,10,0.4) 0%, rgba(200,40,0,0.2) 30%, transparent 60%)',
+              animation: 'lavaGlow 2s ease-in-out infinite alternate',
+            }} />
+            {/* Spike row using clip-path */}
+            <div className="absolute bottom-0 left-0 right-0 h-[65%]" style={{
+              background: 'linear-gradient(to top, #2a1a12, #1a0e08, #3a2015)',
+              clipPath: 'polygon(0% 100%, 5% 35%, 10% 100%, 15% 25%, 20% 100%, 28% 20%, 33% 100%, 40% 30%, 45% 100%, 52% 15%, 58% 100%, 63% 28%, 70% 100%, 75% 22%, 82% 100%, 88% 18%, 93% 100%, 97% 35%, 100% 100%)',
+              animation: 'spikesMove 2.5s ease-in-out infinite',
+            }} />
+            {/* Spike highlights */}
+            <div className="absolute bottom-0 left-0 right-0 h-[65%] opacity-40" style={{
+              background: 'linear-gradient(to top, rgba(255,80,20,0.3), transparent 60%)',
+              clipPath: 'polygon(0% 100%, 5% 35%, 10% 100%, 15% 25%, 20% 100%, 28% 20%, 33% 100%, 40% 30%, 45% 100%, 52% 15%, 58% 100%, 63% 28%, 70% 100%, 75% 22%, 82% 100%, 88% 18%, 93% 100%, 97% 35%, 100% 100%)',
+              animation: 'spikesMove 2.5s ease-in-out infinite, lavaGlow 2s ease-in-out infinite alternate',
+            }} />
+            {/* Ember particles */}
+            <div className="absolute w-1 h-1 rounded-full bg-orange-500/60 left-[30%] bottom-[50%]" style={{ animation: 'ember 2s ease-out infinite' }} />
+            <div className="absolute w-0.5 h-0.5 rounded-full bg-red-400/50 left-[60%] bottom-[40%]" style={{ animation: 'ember 2.5s ease-out infinite 0.7s' }} />
+            <div className="absolute w-1 h-1 rounded-full bg-yellow-500/40 left-[45%] bottom-[55%]" style={{ animation: 'ember 3s ease-out infinite 1.3s' }} />
+          </div>
+        ) : theme.id === 'pirate' ? (
+          /* Pirate: Deep whirlpool with debris */
+          <div className="w-full h-full relative bg-[#04111d]">
+            {/* Deep ocean layers */}
+            <div className="absolute inset-0" style={{
+              background: 'radial-gradient(ellipse at 50% 50%, rgba(10,80,120,0.5) 0%, rgba(5,30,50,0.3) 50%, transparent 80%)',
+            }} />
+            {/* Outer whirlpool ring */}
+            <div className="absolute inset-[-30%] rounded-full" style={{
+              background: 'conic-gradient(from 0deg, transparent, rgba(40,160,200,0.25) 30deg, transparent 60deg, rgba(30,140,180,0.2) 120deg, transparent 180deg, rgba(50,170,210,0.2) 240deg, transparent 300deg)',
+              animation: 'spin 6s linear infinite',
+            }} />
+            {/* Inner vortex */}
+            <div className="absolute inset-[10%] rounded-full" style={{
+              background: 'conic-gradient(from 180deg, transparent, rgba(80,200,240,0.2) 45deg, transparent 90deg, rgba(60,180,220,0.15) 180deg, transparent 240deg)',
+              animation: 'spin 4s linear infinite reverse',
+            }} />
+            {/* Dark center hole */}
+            <div className="absolute inset-[30%] rounded-full bg-[radial-gradient(circle,rgba(0,10,20,0.8)_0%,transparent_100%)]" />
+            {/* Foam specks */}
+            <div className="absolute w-1 h-1 rounded-full bg-white/30 top-[15%] left-[25%]" style={{ animation: 'spin 6s linear infinite' }} />
+            <div className="absolute w-0.5 h-0.5 rounded-full bg-white/20 top-[70%] left-[65%]" style={{ animation: 'spin 6s linear infinite' }} />
+            <div className="absolute w-1 h-1 rounded-full bg-cyan-300/20 top-[40%] left-[75%]" style={{ animation: 'spin 4s linear infinite reverse' }} />
+          </div>
+        ) : (
+          /* Greek: Medusa's poison pool */
+          <div className="w-full h-full relative bg-[#08051a]">
+            {/* Toxic pool surface */}
+            <div className="absolute inset-0" style={{
+              background: 'radial-gradient(ellipse at 50% 50%, rgba(120,40,200,0.3) 0%, rgba(60,15,100,0.15) 50%, transparent 80%)',
+              animation: 'toxicPulse 3s ease-in-out infinite',
+            }} />
+            {/* Swirling surface */}
+            <div className="absolute inset-[-10%] rounded-full" style={{
+              background: 'conic-gradient(from 0deg, transparent, rgba(147,51,234,0.15) 60deg, transparent 120deg, rgba(168,85,247,0.12) 240deg, transparent 360deg)',
+              animation: 'spin 10s linear infinite',
+            }} />
+            {/* Bubbles */}
+            <div className="absolute w-2 h-2 rounded-full bottom-0 left-[20%]"
+              style={{ background: 'radial-gradient(circle at 30% 30%, rgba(192,132,252,0.6), rgba(147,51,234,0.3) 50%, transparent 100%)', animation: 'poisonBubble 2.5s ease-out infinite' }} />
+            <div className="absolute w-1.5 h-1.5 rounded-full bottom-0 left-[55%]"
+              style={{ background: 'radial-gradient(circle at 30% 30%, rgba(168,85,247,0.5), rgba(120,40,200,0.2) 50%, transparent 100%)', animation: 'poisonBubble 3s ease-out infinite 0.8s' }} />
+            <div className="absolute w-2.5 h-2.5 rounded-full bottom-0 left-[75%]"
+              style={{ background: 'radial-gradient(circle at 30% 30%, rgba(139,92,246,0.5), rgba(100,30,180,0.2) 50%, transparent 100%)', animation: 'poisonBubble 3.5s ease-out infinite 1.5s' }} />
+            <div className="absolute w-1 h-1 rounded-full bottom-0 left-[40%]"
+              style={{ background: 'radial-gradient(circle at 30% 30%, rgba(192,132,252,0.4), transparent 60%)', animation: 'poisonBubble 4s ease-out infinite 2.2s' }} />
+            {/* Green toxic highlights */}
+            <div className="absolute inset-0" style={{
+              background: 'radial-gradient(circle at 25% 40%, rgba(34,197,94,0.08) 0%, transparent 30%), radial-gradient(circle at 70% 60%, rgba(34,197,94,0.06) 0%, transparent 25%)',
+              animation: 'toxicPulse 4s ease-in-out infinite alternate',
+            }} />
+            {/* Poison skull */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-purple-400/25 text-base animate-pulse drop-shadow-lg">☠</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

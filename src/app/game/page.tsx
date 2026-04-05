@@ -20,6 +20,12 @@ import GameOverModal from '@/components/GameOverModal';
 import ThemeToggle from '@/components/ThemeToggle';
 import SetupTray from '@/components/SetupTray';
 import CoinFlip from '@/components/CoinFlip';
+import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
+import VoiceCommander from '@/components/api/VoiceCommander';
+import NotificationManager from '@/components/api/NotificationManager';
+import PlayerMap from '@/components/api/PlayerMap';
+import { PlayerCoords, GameCommand } from '@/types/api';
+import useGeolocation from '@/hooks/useGeolocation';
 
 let socket: Socket | null = null;
 
@@ -62,6 +68,11 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const [coinFlip, setCoinFlip] = useState<{ player1Name: string; player2Name: string; winner: 1 | 2 } | null>(null);
   const [opponentMove, setOpponentMove] = useState<{ from: Square; to: Square } | null>(null);
+  const [opponentCoords, setOpponentCoords] = useState<PlayerCoords | null>(null);
+
+  // API refs
+  const narrationRef = useRef<NarrationPlayerHandle>(null);
+  const { latitude, longitude } = useGeolocation();
 
   // Setup state
   const [setupPieces, setSetupPieces] = useState<PlacedPiece[]>([]);
@@ -147,6 +158,27 @@ export default function GamePage() {
         }
         setRevealingSquares(squares);
         setRevealEvent(event);
+
+        // Trigger narration for the event
+        if (event.result) {
+          const winner = event.result.winner;
+          if (event.type === 'spy_kills_marshal') {
+            narrationRef.current?.narrate('spy_kills_marshal', { winnerPiece: theme.pieceNames['0'], loserPiece: theme.pieceNames['10'] });
+          } else if (event.type === 'miner_defuses_bomb') {
+            narrationRef.current?.narrate('miner_defuses_bomb', { winnerPiece: theme.pieceNames['3'] });
+          } else if (winner === 'flag_captured') {
+            narrationRef.current?.narrate('flag_captured');
+          } else if (winner === 'both_destroyed') {
+            narrationRef.current?.narrate('equal_rank');
+          } else if (winner === 'attacker') {
+            narrationRef.current?.narrate('combat_kill', { winnerPiece: theme.pieceNames[event.result.attacker.rank], loserPiece: theme.pieceNames[event.result.defender.rank] });
+          } else if (winner === 'defender') {
+            narrationRef.current?.narrate('combat_kill', { winnerPiece: theme.pieceNames[event.result.defender.rank], loserPiece: theme.pieceNames[event.result.attacker.rank] });
+          }
+        }
+        if (event.spotterResult) {
+          narrationRef.current?.narrate(event.spotterResult.correct ? 'spotter_correct' : 'spotter_wrong');
+        }
       }, showDelay);
 
       revealTimerRef.current = setTimeout(() => {
@@ -183,10 +215,22 @@ export default function GamePage() {
       setError(data.message);
     });
 
+    // Geolocation relay - receive opponent's location
+    socket.on(S2C.PLAYER_LOCATION, (data: { latitude: number; longitude: number }) => {
+      setOpponentCoords({ latitude: data.latitude, longitude: data.longitude });
+    });
+
     return () => {
       socket?.disconnect();
     };
   }, [router]);
+
+  // Send own location when available
+  useEffect(() => {
+    if (latitude && longitude && socket?.connected) {
+      socket.emit(C2S.PLAYER_LOCATION, { latitude, longitude });
+    }
+  }, [latitude, longitude]);
 
   // Handle square clicks during PLAYING phase
   const handleBoardClick = useCallback((row: number, col: number) => {
@@ -356,6 +400,42 @@ export default function GamePage() {
     setValidMoves([]);
     setLastMove(null);
   }, []);
+
+  // Handle voice commands
+  const handleVoiceCommand = useCallback((command: GameCommand) => {
+    if (!gameState) return;
+
+    if (command.type === 'ready' && gameState.phase === 'setup') {
+      if (setupPieces.length === TOTAL_PIECES && !isReady) {
+        setIsReady(true);
+        socket?.emit(C2S.PLACE_PIECES, { pieces: setupPieces });
+        socket?.emit(C2S.PLAYER_READY);
+      }
+    }
+
+    if (command.type === 'move' && gameState.phase === 'playing' && command.from && command.to) {
+      // Parse coordinates like "A3" to row/col
+      const parseCoord = (s: string) => {
+        const col = s.charCodeAt(0) - 65; // A=0, B=1, ...
+        const row = 8 - parseInt(s.slice(1)); // "1"=row7, "8"=row0
+        return { row, col };
+      };
+      const from = parseCoord(command.from);
+      const to = parseCoord(command.to);
+      if (from.row >= 0 && from.row < 8 && from.col >= 0 && from.col < 10 &&
+          to.row >= 0 && to.row < 8 && to.col >= 0 && to.col < 10) {
+        socket?.emit(C2S.MAKE_MOVE, { from, to });
+        setLastMove({ from, to });
+      }
+    }
+
+    if (command.type === 'theme' && command.theme) {
+      const t = command.theme.toLowerCase();
+      if (t === 'kingdom' || t === 'pirate' || t === 'greek') {
+        setThemeId(t);
+      }
+    }
+  }, [gameState, setupPieces, isReady, setThemeId]);
 
   // Build the board for setup phase (show placed pieces)
   const getDisplayBoard = (): (ClientPiece | null)[][] => {
@@ -609,6 +689,31 @@ export default function GamePage() {
           targets={spotterData.adjacentTargets}
           onPredict={handleSpotterPredict}
         />
+      )}
+
+      {/* API Components */}
+      <NarrationPlayer ref={narrationRef} theme={theme.id} />
+      <NotificationManager
+        theme={theme.id}
+        gameState={gameState ? {
+          phase: gameState.phase,
+          myPlayer: myPlayer.current,
+          currentTurn: gameState.currentTurn,
+          opponentConnected: gameState.opponentConnected,
+          moveLog: gameState.moveLog,
+        } : null}
+      />
+      <VoiceCommander theme={theme.id} onCommand={handleVoiceCommand} />
+
+      {/* Player Map - show in right sidebar during playing */}
+      {gameState.phase === 'playing' && (latitude || opponentCoords) && (
+        <div className="fixed bottom-4 left-4 z-30">
+          <PlayerMap
+            player1={latitude && longitude ? { latitude, longitude } : null}
+            player2={opponentCoords}
+            theme={theme.id}
+          />
+        </div>
       )}
 
       {gameState.phase === 'gameover' && gameState.winner && (

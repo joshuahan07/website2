@@ -119,9 +119,12 @@ export default function Board({
   };
 
   // Calculate slide transform for the piece that moved
-  const getSlideStyle = (row: number, col: number): React.CSSProperties | undefined => {
+  // Only slides opponent pieces, not your own (prevents wrong animation when opponent attacks and loses)
+  const getSlideStyle = (row: number, col: number, piece: ClientPiece | null): React.CSSProperties | undefined => {
     if (!arrowMove) return undefined;
     if (row !== arrowMove.toRow || col !== arrowMove.toCol) return undefined;
+    // Don't slide your own piece - only slide the opponent's piece
+    if (piece && piece.owner === myPlayer) return undefined;
 
     const fromDisplayRow = rows.indexOf(arrowMove.fromRow);
     const toDisplayRow = rows.indexOf(arrowMove.toRow);
@@ -199,7 +202,7 @@ export default function Board({
                   const isLastTo = lastMove?.to.row === r && lastMove?.to.col === c;
                   const isRevealing = revealingSquares.has(`${r},${c}`);
                   const isMySetupZone = myPlayer === 1 ? r >= 5 : r <= 2;
-                  const slideStyle = getSlideStyle(r, c);
+                  const slideStyle = getSlideStyle(r, c, piece);
 
                   return (
                     <SquareComponent
