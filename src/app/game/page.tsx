@@ -507,9 +507,9 @@ export default function GamePage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-stone-950 text-white">
+    <div className="lg:h-screen flex flex-col lg:overflow-hidden overflow-y-auto bg-stone-950 text-white">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-stone-900/90 border-b border-stone-700 backdrop-blur-sm relative z-50">
+      <div className="game-topbar flex items-center justify-between px-4 py-2 bg-stone-900/90 border-b border-stone-700 backdrop-blur-sm relative z-50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -557,7 +557,7 @@ export default function GamePage() {
               myPlayer.current === 1 ? 'bg-blue-400' : 'bg-red-400'
             }`} />
           </span>
-          <span className="text-xs text-stone-500 ml-2">
+          <span className="game-vs-label text-xs text-stone-500 ml-2">
             vs {gameState.opponentNickname || 'Opponent'}
           </span>
           {gameState.phase === 'playing' && (
@@ -593,10 +593,10 @@ export default function GamePage() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 px-4 py-2 max-w-[1600px] mx-auto w-full">
+      <div className="game-layout-main flex-1 min-h-0 flex flex-col lg:flex-row gap-6 px-4 py-2 max-w-[1600px] mx-auto w-full">
         {/* Left sidebar — captured pieces (playing/gameover only) */}
         {(gameState.phase === 'playing' || gameState.phase === 'gameover') && (
-          <div className="lg:w-52 shrink-0 order-2 lg:order-1 overflow-y-auto">
+          <div className="game-sidebar-left lg:w-52 shrink-0 order-2 lg:order-1 overflow-y-auto">
             <CapturedPieces
               mine={gameState.capturedPieces.mine}
               theirs={gameState.capturedPieces.theirs}
@@ -605,7 +605,7 @@ export default function GamePage() {
         )}
 
         {/* Center — board with setup overlay */}
-        <div className="flex-1 min-h-0 order-1 lg:order-2 flex flex-col relative">
+        <div className="game-board-center flex-1 min-h-0 order-1 lg:order-2 flex flex-col relative">
           <Board
             board={getDisplayBoard()}
             myPlayer={myPlayer.current}
@@ -702,7 +702,7 @@ export default function GamePage() {
 
         {/* Right sidebar — move log (playing/gameover only) */}
         {(gameState.phase === 'playing' || gameState.phase === 'gameover') && (
-          <div className="lg:w-52 shrink-0 order-3 overflow-y-auto">
+          <div className="game-sidebar-right lg:w-52 shrink-0 order-3 overflow-y-auto">
             <MoveLog
               entries={gameState.moveLog}
               onEntryClick={(from, to) => {

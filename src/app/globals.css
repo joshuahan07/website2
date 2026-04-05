@@ -398,3 +398,129 @@ body {
   0% { width: 100%; }
   100% { width: 0%; }
 }
+
+/* ── Mobile Responsive (below 1024px) ────────────────────── */
+/* These rules ONLY apply on smaller screens and do NOT affect desktop */
+
+@media (max-width: 1023px) {
+  /* Game page: stack vertically, allow scrolling */
+  .game-layout-main {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Sidebars: horizontal, compact */
+  .game-sidebar-left,
+  .game-sidebar-right {
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Captured pieces: horizontal scroll on mobile */
+  .game-sidebar-left .grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+
+  /* Board container: full width */
+  .game-board-center {
+    min-height: auto !important;
+    flex: none !important;
+  }
+}
+
+/* Tablets (640px to 1023px) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .game-layout-main {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Sidebars: side by side below the board */
+  .game-sidebar-left,
+  .game-sidebar-right {
+    width: 100% !important;
+  }
+
+  .game-sidebar-left .grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+
+  /* Board: bigger on tablet */
+  .game-board-center {
+    flex: none !important;
+  }
+}
+
+/* Small phones (below 640px) */
+@media (max-width: 639px) {
+  /* Top bar: wrap and shrink */
+  .game-topbar {
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  .game-topbar > div {
+    gap: 0.375rem !important;
+  }
+
+  /* Turn indicator: smaller text */
+  .game-turn-indicator {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+
+  /* Player names: hide "vs Opponent" on very small screens */
+  .game-vs-label {
+    display: none !important;
+  }
+
+  /* Captured pieces: even more compact */
+  .game-sidebar-left .grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Move log: shorter */
+  .game-sidebar-right .max-h-48 {
+    max-height: 8rem !important;
+  }
+
+  /* Setup tray overlay: full width, smaller padding */
+  .setup-overlay-content {
+    padding: 0.5rem !important;
+  }
+
+  .setup-overlay-content .grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 0.375rem !important;
+  }
+
+  /* Battle card: smaller on mobile */
+  .battle-card {
+    max-width: calc(100vw - 2rem) !important;
+    margin: 0 0.5rem !important;
+  }
+
+  .battle-card .piece-circle {
+    width: 4.5rem !important;
+    height: 4.5rem !important;
+  }
+
+  /* Coin flip: smaller */
+  .coin-container {
+    width: 6rem !important;
+    height: 6rem !important;
+  }
+
+  /* Player map: smaller */
+  .player-map-container {
+    transform: scale(0.75);
+    transform-origin: bottom right;
+  }
+}
