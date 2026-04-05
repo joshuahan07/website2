@@ -17,7 +17,14 @@ export default function Home() {
 
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
-    socket = io(socketUrl, { autoConnect: true });
+    socket = io(socketUrl, {
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
 
     socket.on(S2C.ROOM_CREATED, (data: { roomCode: string; playerNumber: number; theme?: string }) => {
       setRoomCode(data.roomCode);

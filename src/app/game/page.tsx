@@ -108,7 +108,14 @@ export default function GamePage() {
     myPlayer.current = parseInt(storedPlayer) as PlayerNumber;
 
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
-    socket = io(socketUrl, { autoConnect: true });
+    socket = io(socketUrl, {
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
 
     socket.on('connect', () => {
       const storedNickname = sessionStorage.getItem('nickname');
@@ -565,7 +572,7 @@ export default function GamePage() {
       {/* Disconnection warning */}
       {disconnected && (
         <div className="bg-red-900/50 border-b border-red-600 px-4 py-2 text-center text-sm text-red-300 animate-pulse">
-          Opponent disconnected &mdash; waiting for reconnection (60s)...
+          Opponent disconnected &mdash; waiting for reconnection (5 min)...
         </div>
       )}
 

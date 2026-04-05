@@ -231,8 +231,8 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
   const io = new SocketIOServer(server, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
-    pingTimeout: 30000,
-    pingInterval: 10000,
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   io.on('connection', (socket) => {
@@ -745,7 +745,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       player.connected = false;
       player.disconnectedAt = Date.now();
 
-      // Bot games: clean up after 60s (same as multiplayer)
+      // Bot games: clean up after 5 min
       if (botGames.has(roomCode)) {
         const botTimer = setTimeout(() => {
           if (!player.connected) {
@@ -755,7 +755,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
             console.log(`Bot game ${roomCode} deleted (player disconnected)`);
           }
           disconnectTimers.delete(socket.id);
-        }, 60000);
+        }, 300000);
         disconnectTimers.set(socket.id, botTimer);
         socketToRoom.delete(socket.id);
         return;
@@ -767,9 +767,9 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
         io.to(opponent.id).emit(S2C.OPPONENT_DISCONNECTED);
       }
 
-      // Set 60-second cleanup timer
+      // Set 5-minute cleanup timer (gives time for reconnection)
       const timer = setTimeout(() => {
-        // If still disconnected after 60s, end the game
+        // If still disconnected after 5 min, end the game
         if (!player.connected) {
           if (game.phase === 'playing') {
             game.phase = 'gameover';
@@ -786,7 +786,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
           }
         }
         disconnectTimers.delete(socket.id);
-      }, 60000);
+      }, 300000);
 
       disconnectTimers.set(socket.id, timer);
       socketToRoom.delete(socket.id);
