@@ -69,7 +69,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 0 — weakest piece</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">The <span className="text-white">weakest piece</span> — dies to everything. But it has one trick: it can <span className="text-white">kill the {n('10')}</span> (rank 10) when <span className="text-white">attacking first</span>. If the {n('10')} attacks the {n('0')}, the {n('0')} dies.</p>
+            <p className="text-xs text-white/50">The <span className="text-white">weakest piece</span> — dies to everything. But it has one trick: it can <span className="text-white">kill the {n('10')}</span> (rank 10) when <span className="text-white">attacking first</span>. (Must attack first)</p>
           </div>
 
           <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
@@ -80,7 +80,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 2</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">Can move <span className="text-white">any number of squares</span> in a straight line (like a rook in chess). Great for scouting and long-range attacks.</p>
+            <p className="text-xs text-white/50">Can move <span className="text-white">any number of squares</span> in a straight line (like a rook in chess).</p>
           </div>
 
           <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
@@ -102,7 +102,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 1</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">After moving, if there is an enemy piece <span className="text-white">directly ahead</span> (one square toward the opponent&apos;s side), you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> — without combat!</p>
+            <p className="text-xs text-white/50">If this piece moves into an empty square and there is an enemy piece <span className="text-white">directly in front of it</span> after it moves, you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> without combat.</p>
           </div>
         </div>
       ),
