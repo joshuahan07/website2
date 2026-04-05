@@ -10,6 +10,7 @@ interface LobbyProps {
   playerNumber: number | null;
   waiting: boolean;
   error: string | null;
+  connecting?: boolean;
 }
 
 const THEMES = [
@@ -19,7 +20,7 @@ const THEMES = [
 ];
 
 export default function Lobby({
-  onCreateGame, onJoinGame, onPlayBot, roomCode, playerNumber, waiting, error,
+  onCreateGame, onJoinGame, onPlayBot, roomCode, playerNumber, waiting, error, connecting,
 }: LobbyProps) {
   const [nickname, setNickname] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -74,7 +75,13 @@ export default function Lobby({
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
 
         {/* Waiting for opponent */}
-        {waiting && roomCode ? (
+        {connecting ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-3 border-blue-500/30 border-t-blue-400 rounded-full animate-spin mx-auto mb-6" />
+            <h2 className="text-xl font-bold text-white mb-2">Connecting to server...</h2>
+            <p className="text-white/30 text-sm">This may take a moment if the server is waking up</p>
+          </div>
+        ) : waiting && roomCode ? (
           <div className="w-full max-w-md text-center">
             <h1 className="text-5xl font-black mb-2 tracking-[0.08em]">
               <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">OUT</span>RANK

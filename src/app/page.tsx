@@ -14,6 +14,8 @@ export default function Home() {
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
@@ -23,7 +25,16 @@ export default function Home() {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000,
+      timeout: 30000,
+    });
+
+    socket.on('connect', () => {
+      setConnected(true);
+      setConnecting(false);
+    });
+
+    socket.on('disconnect', () => {
+      setConnected(false);
     });
 
     socket.on(S2C.ROOM_CREATED, (data: { roomCode: string; playerNumber: number; theme?: string }) => {
@@ -56,24 +67,48 @@ export default function Home() {
     };
   }, [router]);
 
+  // Wait for connection before emitting, show connecting state
+  const emitWhenReady = useCallback((event: string, data: Record<string, unknown>) => {
+    if (socket?.connected) {
+      socket.emit(event, data);
+    } else {
+      setConnecting(true);
+      // Wait for connection then emit
+      const onConnect = () => {
+        socket?.emit(event, data);
+        socket?.off('connect', onConnect);
+        setConnecting(false);
+      };
+      socket?.on('connect', onConnect);
+      // Timeout after 30s
+      setTimeout(() => {
+        socket?.off('connect', onConnect);
+        if (!socket?.connected) {
+          setConnecting(false);
+          setError('Server is waking up. Please try again in a few seconds.');
+        }
+      }, 30000);
+    }
+  }, []);
+
   const handleCreateGame = useCallback((nickname: string, theme: string) => {
     setError(null);
     sessionStorage.setItem('nickname', nickname);
     sessionStorage.setItem('roomTheme', theme);
-    socket?.emit(C2S.CREATE_ROOM, { nickname, theme });
-  }, []);
+    emitWhenReady(C2S.CREATE_ROOM, { nickname, theme });
+  }, [emitWhenReady]);
 
   const handleJoinGame = useCallback((code: string, nickname: string) => {
     setError(null);
     sessionStorage.setItem('nickname', nickname);
-    socket?.emit(C2S.JOIN_ROOM, { roomCode: code, nickname });
-  }, []);
+    emitWhenReady(C2S.JOIN_ROOM, { roomCode: code, nickname });
+  }, [emitWhenReady]);
 
   const handlePlayBot = useCallback((nickname: string) => {
     setError(null);
     sessionStorage.setItem('nickname', nickname);
-    socket?.emit(C2S.CREATE_BOT_GAME, { nickname });
-  }, []);
+    emitWhenReady(C2S.CREATE_BOT_GAME, { nickname });
+  }, [emitWhenReady]);
 
   return (
     <Lobby
@@ -84,6 +119,7 @@ export default function Home() {
       playerNumber={playerNumber}
       waiting={waiting}
       error={error}
+      connecting={connecting}
     />
   );
 }
