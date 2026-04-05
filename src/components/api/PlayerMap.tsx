@@ -14,20 +14,36 @@ interface PlayerMapProps {
 const MAP_WIDTH = 250;
 const MAP_HEIGHT = 150;
 
-// Simplified continent outlines for a mini world map (equirectangular projection)
+// More detailed continent outlines (equirectangular projection, 250x150)
 const CONTINENT_PATHS = [
   // North America
-  'M30,35 L55,25 L70,30 L75,45 L65,55 L55,65 L40,60 L30,50 Z',
+  'M22,38 L28,32 L38,28 L48,24 L56,22 L64,24 L72,28 L76,34 L78,42 L74,48 L70,52 L64,56 L56,62 L48,64 L42,60 L36,56 L30,50 L24,44 Z',
+  // Central America
+  'M48,64 L52,66 L54,70 L52,72 L48,70 Z',
   // South America
-  'M55,68 L65,65 L70,75 L68,95 L60,105 L50,95 L48,80 Z',
+  'M52,74 L60,70 L66,72 L70,78 L72,86 L70,96 L66,104 L60,108 L54,104 L50,96 L48,86 L48,78 Z',
   // Europe
-  'M115,30 L130,25 L135,35 L128,45 L118,42 L115,35 Z',
+  'M112,28 L118,24 L124,22 L130,24 L134,28 L136,34 L132,38 L128,42 L122,44 L116,42 L112,36 Z',
   // Africa
-  'M115,50 L135,48 L140,60 L138,80 L130,95 L118,90 L112,70 L110,58 Z',
+  'M110,50 L118,46 L126,44 L134,46 L140,52 L142,62 L140,74 L136,84 L130,92 L124,96 L118,94 L112,88 L108,78 L106,66 L108,56 Z',
+  // Middle East
+  'M136,38 L142,36 L148,38 L152,44 L148,48 L142,50 L136,46 Z',
   // Asia
-  'M135,20 L175,15 L195,25 L200,40 L190,50 L170,55 L155,50 L140,45 L135,30 Z',
+  'M140,18 L152,14 L164,12 L176,14 L188,18 L196,24 L200,32 L198,40 L192,48 L184,52 L176,54 L168,52 L160,50 L152,48 L146,44 L140,38 L138,28 Z',
+  // India
+  'M160,50 L166,52 L170,60 L166,68 L160,66 L156,58 Z',
+  // Southeast Asia
+  'M184,52 L190,54 L194,60 L190,64 L186,60 Z',
+  // Japan/Korea
+  'M200,28 L204,26 L206,30 L204,34 L200,32 Z',
   // Australia
-  'M185,80 L205,78 L210,88 L200,95 L188,92 Z',
+  'M186,78 L196,74 L206,76 L212,82 L210,90 L204,96 L196,96 L190,92 L186,86 Z',
+  // New Zealand
+  'M214,94 L216,90 L218,94 L216,98 Z',
+  // Greenland
+  'M68,14 L78,10 L86,12 L84,20 L76,22 L70,20 Z',
+  // UK/Ireland
+  'M108,26 L112,24 L114,28 L112,32 L108,30 Z',
 ];
 
 export default function PlayerMap({ player1, player2, theme, isLoading }: PlayerMapProps) {
@@ -58,16 +74,26 @@ export default function PlayerMap({ player1, player2, theme, isLoading }: Player
         width={MAP_WIDTH}
         height={MAP_HEIGHT}
         viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-        className="rounded-lg border border-stone-700/50 bg-stone-900/80"
+        className="rounded-lg border border-white/[0.06] overflow-hidden"
+        style={{ background: 'linear-gradient(180deg, #0c1220 0%, #0a1628 50%, #0d1a2d 100%)' }}
       >
-        {/* Continent outlines */}
+        {/* Ocean grid lines */}
+        {Array.from({ length: 7 }, (_, i) => (
+          <line key={`h${i}`} x1={0} y1={i * 25} x2={MAP_WIDTH} y2={i * 25} stroke="rgba(59,130,246,0.06)" strokeWidth={0.5} />
+        ))}
+        {Array.from({ length: 11 }, (_, i) => (
+          <line key={`v${i}`} x1={i * 25} y1={0} x2={i * 25} y2={MAP_HEIGHT} stroke="rgba(59,130,246,0.06)" strokeWidth={0.5} />
+        ))}
+
+        {/* Continent fills */}
         {CONTINENT_PATHS.map((d, i) => (
           <path
             key={i}
             d={d}
-            fill="rgba(120, 113, 100, 0.25)"
-            stroke="rgba(120, 113, 100, 0.4)"
-            strokeWidth={0.5}
+            fill="rgba(34, 197, 94, 0.12)"
+            stroke="rgba(34, 197, 94, 0.25)"
+            strokeWidth={0.8}
+            strokeLinejoin="round"
           />
         ))}
 

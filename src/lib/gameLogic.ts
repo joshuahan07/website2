@@ -302,7 +302,7 @@ export function createClientGameState(
   const opponentPlayer = state.players.find(p => p.number === opponent);
   const myPlayerObj = state.players.find(p => p.number === forPlayer);
 
-  return {
+  const clientState: ClientGameState = {
     roomCode: state.roomCode,
     phase: state.phase,
     myPlayer: forPlayer,
@@ -320,6 +320,29 @@ export function createClientGameState(
     myNickname: myPlayerObj?.nickname,
     opponentNickname: opponentPlayer?.nickname,
   };
+
+  // Propagate pending spotter prompt so it survives reconnects
+  if (state.awaitingSpotter && state.currentTurn === forPlayer) {
+    // Find the spotter piece and its adjacent targets
+    for (let r = 0; r < BOARD_ROWS; r++) {
+      for (let c = 0; c < BOARD_COLS; c++) {
+        const piece = state.board[r][c];
+        if (piece && piece.owner === forPlayer && piece.rank === '1') {
+          const targets = getSpotterTargets({ row: r, col: c }, state.board, forPlayer);
+          if (targets.length > 0) {
+            clientState.awaitingSpotter = {
+              spotterPosition: { row: r, col: c },
+              adjacentTargets: targets,
+            };
+            break;
+          }
+        }
+      }
+      if (clientState.awaitingSpotter) break;
+    }
+  }
+
+  return clientState;
 }
 
 // ── Move Execution (server-side) ─────────────────────────

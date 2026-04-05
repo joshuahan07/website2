@@ -242,6 +242,9 @@ export default function VoiceCommander({ theme, onCommand }: VoiceCommanderProps
       >
         <MicIcon isListening={isListening} />
       </button>
+      <span className={`text-[9px] font-medium tracking-wide ${isListening ? 'text-red-400' : 'text-white/30'}`}>
+        {isListening ? 'Listening...' : 'Voice Command'}
+      </span>
 
     </div>
   );

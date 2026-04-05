@@ -104,10 +104,11 @@ export default function Home() {
     emitWhenReady(C2S.JOIN_ROOM, { roomCode: code, nickname });
   }, [emitWhenReady]);
 
-  const handlePlayBot = useCallback((nickname: string) => {
+  const handlePlayBot = useCallback((nickname: string, theme: string) => {
     setError(null);
     sessionStorage.setItem('nickname', nickname);
-    emitWhenReady(C2S.CREATE_BOT_GAME, { nickname });
+    sessionStorage.setItem('roomTheme', theme);
+    emitWhenReady(C2S.CREATE_BOT_GAME, { nickname, theme });
   }, [emitWhenReady]);
 
   return (

@@ -264,7 +264,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
     // ── CREATE BOT GAME ──────────────────────────────────
 
-    socket.on(C2S.CREATE_BOT_GAME, (data?: { nickname?: string }) => {
+    socket.on(C2S.CREATE_BOT_GAME, (data?: { nickname?: string; theme?: string }) => {
       const roomCode = generateRoomCode();
       const game = createGameState(roomCode);
 
@@ -287,6 +287,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       });
 
       game.phase = 'setup';
+      if (data?.theme) game.roomTheme = data.theme;
       games.set(roomCode, game);
       botGames.add(roomCode);
       botLastMoved.set(roomCode, null);

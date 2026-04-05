@@ -6,7 +6,7 @@ import { getPieceCrop } from '@/lib/pieceCrops';
 interface LobbyProps {
   onCreateGame: (nickname: string, theme: string) => void;
   onJoinGame: (code: string, nickname: string) => void;
-  onPlayBot?: (nickname: string) => void;
+  onPlayBot?: (nickname: string, theme: string) => void;
   roomCode: string | null;
   playerNumber: number | null;
   waiting: boolean;
@@ -230,74 +230,72 @@ export default function Lobby({
 
                 </div>
 
-                {/* CONTROL PANEL */}
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-[#0a0e18]/80 backdrop-blur-xl rounded-3xl border border-white/[0.08] shadow-2xl shadow-black/30 overflow-hidden">
-                    <div className="flex flex-col sm:flex-row">
-
-                      {/* Left: Factions */}
-                      <div className="sm:w-48 bg-white/[0.03] border-b sm:border-b-0 sm:border-r border-white/[0.06] p-3 flex sm:flex-col gap-1.5">
-                        {THEMES.map(t => {
-                          const isSelected = selectedTheme === t.id;
-                          return (
-                            <button key={t.id} onClick={() => setSelectedTheme(t.id)}
-                              className={`flex-1 sm:flex-none h-11 rounded-xl flex items-center justify-center sm:justify-start gap-2.5 sm:px-4 text-sm font-semibold
-                                transition-all duration-200 ${
-                                isSelected
-                                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                  : 'text-white/50 hover:bg-white/[0.06] hover:text-white'
-                              }`}>
-                              <span className="text-lg">{t.icon}</span>
-                              <span>{t.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right: Name + Buttons */}
-                      <div className="flex-1 p-5 flex flex-col justify-center">
-                        {/* Name input */}
-                        <div className="relative mb-4">
-                          <input type="text" value={nickname} onChange={e => setNickname(e.target.value.slice(0, 20))}
-                            placeholder="Enter your name..." maxLength={20}
-                            className="w-full bg-white/[0.06] border border-white/[0.08] text-white placeholder:text-white/25
-                              focus:border-blue-400/40 h-12 text-sm px-4 pr-10
-                              transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/15 hover:border-white/15" />
-                          <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${
-                            nickname ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}>
-                            <div className="w-2 h-2 rounded-full bg-green-400 shadow-sm shadow-green-400/50" />
-                          </div>
-                        </div>
-
-                        {/* Buttons */}
-                        {onPlayBot && (
-                          <button onClick={() => onPlayBot(nickname || 'Player 1')}
-                            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500
-                              transition-all duration-200 active:scale-[0.99]
-                              hover:shadow-lg hover:shadow-blue-600/20
-                              flex items-center justify-center gap-2.5 font-bold text-sm text-white mb-2.5">
-                            <span className="text-base">🤖</span> Play vs Bot
-                          </button>
-                        )}
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button onClick={() => onCreateGame(nickname || 'Player 1', selectedTheme)}
-                            className="h-10 rounded-xl bg-[#111827] border border-white/[0.08] text-white/80
-                              hover:bg-[#1a2035] hover:text-white transition-all duration-200
-                              font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                            👥 Create Room
-                          </button>
-                          <button onClick={() => setMode('join')}
-                            className="h-10 rounded-xl bg-[#111827] border border-white/[0.08] text-white/80
-                              hover:bg-[#1a2035] hover:text-white transition-all duration-200
-                              font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                            ⚔️ Join Game
-                          </button>
-                        </div>
-                      </div>
+                {/* CENTERED SINGLE COLUMN */}
+                <div className="max-w-xl mx-auto">
+                  {/* Name input */}
+                  <div className="relative mb-4">
+                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value.slice(0, 20))}
+                      placeholder="Enter your name..." maxLength={20}
+                      className="w-full bg-[#0d1017]/80 backdrop-blur-sm border border-white/10 text-white text-center
+                        placeholder:text-white/25 focus:border-blue-400/50 focus:ring-4 focus:ring-blue-500/10
+                        h-14 text-lg px-5 transition-all duration-300 rounded-2xl focus:outline-none hover:border-white/20" />
+                    <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${
+                      nickname ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}>
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-md shadow-green-400/50" />
                     </div>
                   </div>
 
-                  <p className="text-center text-white/12 text-[9px] mt-3 tracking-[0.2em] uppercase">
+                  {/* Faction selector */}
+                  <div className="bg-[#0d1017]/60 backdrop-blur-sm rounded-2xl p-1.5 mb-4 border border-white/[0.06]">
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {THEMES.map(t => {
+                        const isSelected = selectedTheme === t.id;
+                        return (
+                          <button key={t.id} onClick={() => setSelectedTheme(t.id)}
+                            className={`relative rounded-xl py-3.5 px-3 transition-all duration-300 ${
+                              isSelected
+                                ? 'bg-[#1a2035] shadow-lg'
+                                : 'hover:bg-white/[0.04]'
+                            }`}>
+                            {isSelected && (
+                              <div className="absolute top-0 left-[20%] right-[20%] h-0.5 bg-blue-400 rounded-full" />
+                            )}
+                            <span className="text-2xl block mb-1">{t.icon}</span>
+                            <h4 className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-white/50'}`}>{t.name}</h4>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="space-y-3">
+                    {onPlayBot && (
+                      <button onClick={() => onPlayBot(nickname || 'Player 1', selectedTheme)}
+                        className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-500
+                          transition-all duration-200 active:scale-[0.99]
+                          hover:shadow-xl hover:shadow-blue-600/25
+                          flex items-center justify-center gap-3 font-bold text-base text-white">
+                        <span className="text-xl">🤖</span> Play vs Bot <span className="text-xl">🤖</span>
+                      </button>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => onCreateGame(nickname || 'Player 1', selectedTheme)}
+                        className="h-12 rounded-2xl bg-[#111827] border border-white/10 text-white/80
+                          hover:bg-[#1a2035] hover:border-white/20 hover:text-white transition-all duration-200
+                          font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+                        <span>👥</span> Create Room <span>👥</span>
+                      </button>
+                      <button onClick={() => setMode('join')}
+                        className="h-12 rounded-2xl bg-[#111827] border border-white/10 text-white/80
+                          hover:bg-[#1a2035] hover:border-white/20 hover:text-white transition-all duration-200
+                          font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+                        <span>⚔️</span> Join Game <span>⚔️</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-center text-white/15 text-[10px] mt-4 tracking-[0.2em] uppercase">
                     No account required
                   </p>
                 </div>
