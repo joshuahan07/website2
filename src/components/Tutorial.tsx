@@ -102,7 +102,7 @@ export default function Tutorial({ onClose }: TutorialProps) {
                 <p className="text-xs text-white/40">Rank 1</p>
               </div>
             </div>
-            <p className="text-xs text-white/50">After moving next to an enemy piece, you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> — without combat! A powerful tool for eliminating threats safely.</p>
+            <p className="text-xs text-white/50">After moving, if there is an enemy piece <span className="text-white">directly ahead</span> (one square toward the opponent&apos;s side), you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> — without combat!</p>
           </div>
         </div>
       ),

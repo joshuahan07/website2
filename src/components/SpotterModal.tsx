@@ -65,7 +65,7 @@ export default function SpotterModal({ spotterPosition, targets, onPredict }: Sp
                 {theme.pieceNames['1']} Prediction
               </h2>
               <p className="text-xs text-white/30 mt-0.5">
-                Predict an adjacent enemy at {coordLabel(spotterPosition.row, spotterPosition.col)}. If correct, it&apos;s destroyed!
+                Predict the enemy directly ahead at {coordLabel(spotterPosition.row, spotterPosition.col)}. If correct, it&apos;s destroyed!
               </p>
             </div>
           </div>

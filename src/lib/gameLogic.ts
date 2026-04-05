@@ -213,15 +213,16 @@ export function getSpotterTargets(
   spotterPos: Square, board: (PlacedPiece | null)[][], spotterOwner: PlayerNumber
 ): Square[] {
   const targets: Square[] = [];
-  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  // Spotter can only predict the piece directly AHEAD (toward opponent's side)
+  // Player 1 faces toward row 0 (ahead = row - 1)
+  // Player 2 faces toward row 7 (ahead = row + 1)
+  const aheadRow = spotterOwner === 1 ? spotterPos.row - 1 : spotterPos.row + 1;
+  const aheadCol = spotterPos.col;
 
-  for (const [dr, dc] of directions) {
-    const nr = spotterPos.row + dr;
-    const nc = spotterPos.col + dc;
-    if (!isInBounds(nr, nc)) continue;
-    const target = board[nr][nc];
+  if (isInBounds(aheadRow, aheadCol)) {
+    const target = board[aheadRow][aheadCol];
     if (target && target.owner !== spotterOwner) {
-      targets.push({ row: nr, col: nc });
+      targets.push({ row: aheadRow, col: aheadCol });
     }
   }
 
