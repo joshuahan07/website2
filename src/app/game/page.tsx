@@ -32,24 +32,41 @@ import useGeolocation from '@/hooks/useGeolocation';
 
 let socket: Socket | null = null;
 
-function TurnTimer({ active }: { active: boolean }) {
-  const [seconds, setSeconds] = useState(0);
+function TurnTimer({ active, deadline }: { active: boolean; deadline?: number }) {
+  const [display, setDisplay] = useState('0:00');
+  const [isUrgent, setIsUrgent] = useState(false);
 
   useEffect(() => {
-    setSeconds(0);
-    if (!active) return;
-    const interval = setInterval(() => {
-      setSeconds(s => s + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [active]);
-
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+    if (deadline && deadline > 0) {
+      // Countdown mode
+      const update = () => {
+        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        setDisplay(`${mins}:${secs.toString().padStart(2, '0')}`);
+        setIsUrgent(remaining <= 5 && remaining > 0);
+      };
+      update();
+      const interval = setInterval(update, 200);
+      return () => clearInterval(interval);
+    } else {
+      // Count up mode (no timer)
+      let count = 0;
+      setIsUrgent(false);
+      if (!active) { setDisplay('0:00'); return; }
+      const interval = setInterval(() => {
+        count++;
+        const mins = Math.floor(count / 60);
+        const secs = count % 60;
+        setDisplay(`${mins}:${secs.toString().padStart(2, '0')}`);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [active, deadline]);
 
   return (
-    <span className={`text-xs font-mono tabular-nums ${active ? 'text-amber-400 timer-tick' : 'text-stone-500'}`}>
-      {mins}:{secs.toString().padStart(2, '0')}
+    <span className={`text-xs font-mono tabular-nums ${isUrgent ? 'text-red-400 animate-pulse font-bold' : active ? 'text-amber-400 timer-tick' : 'text-stone-500'}`}>
+      {display}
     </span>
   );
 }
@@ -89,6 +106,7 @@ export default function GamePage() {
   const myPlayer = useRef<PlayerNumber>(1);
   const roomCode = useRef<string>('');
   const revealTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const revealShowTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleCopyRoomCode = useCallback(() => {
     if (!roomCode.current) return;
@@ -145,6 +163,12 @@ export default function GamePage() {
         }
       }
 
+      // Restore spotter prompt from game state (handles reconnect)
+      if (state.awaitingSpotter) {
+        setSpotterData(state.awaitingSpotter);
+        setShowSpotter(true);
+      }
+
       // Detect opponent's move from new move log entries
       setGameState(prev => {
         if (prev && state.moveLog.length > (prev.moveLog?.length || 0)) {
@@ -170,10 +194,14 @@ export default function GamePage() {
     });
 
     socket.on(S2C.REVEAL_EVENT, (event: RevealEvent) => {
-      // Clear any existing reveal timer to prevent double-showing
+      // Clear any existing timers to prevent stale reveals
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
+      }
+      if (revealShowTimerRef.current) {
+        clearTimeout(revealShowTimerRef.current);
+        revealShowTimerRef.current = null;
       }
 
       // Delay the battle popup so the piece slide/arrow plays out fully first
@@ -181,7 +209,7 @@ export default function GamePage() {
       const showDelay = 1500;
 
       // Show the battle card and revealing squares together after the delay
-      setTimeout(() => {
+      revealShowTimerRef.current = setTimeout(() => {
         const squares = new Set<string>();
         for (const p of event.pieces) {
           squares.add(`${p.position.row},${p.position.col}`);
@@ -568,7 +596,7 @@ export default function GamePage() {
           </span>
           {gameState.phase === 'playing' && (
             <div className="flex items-center gap-2">
-              <TurnTimer active={isMyTurn} />
+              <TurnTimer active={isMyTurn} deadline={gameState.turnDeadline} />
               <span className={`text-sm font-bold px-3 py-1 rounded transition-all flex items-center gap-1.5 ${
                 isMyTurn
                   ? 'bg-green-600/30 text-green-400 border border-green-500/50 turn-glow'

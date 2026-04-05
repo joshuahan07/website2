@@ -25,6 +25,8 @@ const socketToRoom = new Map<string, string>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const botGames = new Set<string>(); // room codes with a bot player
 const botLastMoved = new Map<string, string | null>(); // roomCode -> last moved piece id
+const spotterTimeouts = new Map<string, NodeJS.Timeout>(); // roomCode -> spotter timeout
+const turnTimers = new Map<string, NodeJS.Timeout>(); // roomCode -> turn skip timeout
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -48,11 +50,44 @@ function createGameState(roomCode: string): GameState {
   };
 }
 
+function startTurnTimer(io: SocketIOServer, game: GameState, roomCode: string) {
+  // Clear existing timer
+  const existing = turnTimers.get(roomCode);
+  if (existing) clearTimeout(existing);
+  turnTimers.delete(roomCode);
+
+  if (!game.turnTimer || game.turnTimer <= 0 || game.phase !== 'playing') return;
+
+  game.turnDeadline = Date.now() + game.turnTimer * 1000;
+
+  const timer = setTimeout(() => {
+    turnTimers.delete(roomCode);
+    if (game.phase !== 'playing') return;
+
+    // Skip the current player's turn
+    const skippedPlayer = game.currentTurn;
+    game.currentTurn = skippedPlayer === 1 ? 2 : 1;
+    console.log(`Turn timer expired in room ${roomCode}, skipping player ${skippedPlayer}`);
+
+    sendGameState(io, game);
+    startTurnTimer(io, game, roomCode);
+
+    // Trigger bot turn if needed
+    if (botGames.has(roomCode) && game.currentTurn === 2) {
+      setTimeout(() => executeBotTurn(io, roomCode), 800);
+    }
+  }, game.turnTimer * 1000);
+
+  turnTimers.set(roomCode, timer);
+}
+
 function sendGameState(io: SocketIOServer, game: GameState) {
   for (const player of game.players) {
     if (player.connected && player.id !== 'bot') {
       const clientState = createClientGameState(game, player.number);
       clientState.roomTheme = game.roomTheme;
+      clientState.turnTimer = game.turnTimer;
+      clientState.turnDeadline = game.turnDeadline;
       io.to(player.id).emit(S2C.GAME_STATE, clientState);
     }
   }
@@ -240,7 +275,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
     // ── CREATE ROOM ──────────────────────────────────────
 
-    socket.on(C2S.CREATE_ROOM, (data?: { nickname?: string; theme?: string }) => {
+    socket.on(C2S.CREATE_ROOM, (data?: { nickname?: string; theme?: string; turnTimer?: number }) => {
       const roomCode = generateRoomCode();
       const game = createGameState(roomCode);
 
@@ -255,6 +290,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
       games.set(roomCode, game);
       if (data?.theme) game.roomTheme = data.theme;
+      if (data?.turnTimer !== undefined) game.turnTimer = data.turnTimer;
       socketToRoom.set(socket.id, roomCode);
       socket.join(roomCode);
 
@@ -264,7 +300,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
     // ── CREATE BOT GAME ──────────────────────────────────
 
-    socket.on(C2S.CREATE_BOT_GAME, (data?: { nickname?: string; theme?: string }) => {
+    socket.on(C2S.CREATE_BOT_GAME, (data?: { nickname?: string; theme?: string; turnTimer?: number }) => {
       const roomCode = generateRoomCode();
       const game = createGameState(roomCode);
 
@@ -288,6 +324,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
       game.phase = 'setup';
       if (data?.theme) game.roomTheme = data.theme;
+      if (data?.turnTimer !== undefined) game.turnTimer = data.turnTimer;
       games.set(roomCode, game);
       botGames.add(roomCode);
       botLastMoved.set(roomCode, null);
@@ -469,6 +506,11 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
         if (botGames.has(roomCode) && game.currentTurn === 2) {
           setTimeout(() => executeBotTurn(io, roomCode), 3500);
         }
+
+        // Start turn timer after coin flip animation
+        if (game.turnTimer && game.turnTimer > 0) {
+          setTimeout(() => startTurnTimer(io, game, roomCode), 3000);
+        }
       }
     });
 
@@ -503,13 +545,11 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
         game.awaitingSpotter = true;
         socket.emit(S2C.SPOTTER_PROMPT, result.spotterPrompt);
         // Update state for client to show prompt
-        const clientState = createClientGameState(game, player.number);
-        clientState.awaitingSpotter = result.spotterPrompt;
-        socket.emit(S2C.GAME_STATE, clientState);
+        sendGameState(io, game);
 
         // Send opponent their view
         const opponent = game.players.find(p => p.number !== player.number);
-        if (opponent && opponent.connected) {
+        if (opponent && opponent.connected && opponent.id !== 'bot') {
           // Reveal the spotter to the opponent
           const opponentReveal: RevealEvent = {
             type: 'spotter_reveal',
@@ -522,8 +562,26 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
             duration: 3000,
           };
           io.to(opponent.id).emit(S2C.REVEAL_EVENT, opponentReveal);
-          io.to(opponent.id).emit(S2C.GAME_STATE, createClientGameState(game, opponent.number));
         }
+
+        // Safety timeout: if no prediction received in 30s, skip the spotter and switch turn
+        const prevTimeout = spotterTimeouts.get(roomCode);
+        if (prevTimeout) clearTimeout(prevTimeout);
+        spotterTimeouts.set(roomCode, setTimeout(() => {
+          spotterTimeouts.delete(roomCode);
+          if (game.awaitingSpotter && game.phase === 'playing') {
+            console.log(`Spotter timeout in room ${roomCode}, skipping prediction`);
+            game.awaitingSpotter = false;
+            game.currentTurn = player.number === 1 ? 2 : 1;
+            sendGameState(io, game);
+
+            // Trigger bot turn if applicable
+            if (botGames.has(roomCode) && game.currentTurn === 2) {
+              setTimeout(() => executeBotTurn(io, roomCode), 800);
+            }
+          }
+        }, 30000));
+
         return;
       }
 
@@ -549,6 +607,12 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       if (!result.gameOver && botGames.has(roomCode) && game.currentTurn === 2) {
         const delay = result.reveal ? 1500 + result.reveal.duration + 500 : 1000;
         setTimeout(() => executeBotTurn(io, roomCode), delay);
+      }
+
+      // Restart turn timer for the next player
+      if (!result.gameOver && !result.spotterPrompt) {
+        const timerDelay = result.reveal ? 1500 + result.reveal.duration + 500 : 0;
+        setTimeout(() => startTurnTimer(io, game, roomCode), timerDelay);
       }
     });
 
@@ -580,8 +644,13 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
         return;
       }
 
-      // Clear awaitingSpotter flag
+      // Clear awaitingSpotter flag and timeout
       game.awaitingSpotter = false;
+      const spotterTimer = spotterTimeouts.get(roomCode);
+      if (spotterTimer) {
+        clearTimeout(spotterTimer);
+        spotterTimeouts.delete(roomCode);
+      }
 
       const result = resolveSpotterPrediction(
         data.spotterPosition,

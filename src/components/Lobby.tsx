@@ -4,9 +4,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { getPieceCrop } from '@/lib/pieceCrops';
 
 interface LobbyProps {
-  onCreateGame: (nickname: string, theme: string) => void;
+  onCreateGame: (nickname: string, theme: string, timer: number) => void;
   onJoinGame: (code: string, nickname: string) => void;
-  onPlayBot?: (nickname: string, theme: string) => void;
+  onPlayBot?: (nickname: string, theme: string, timer: number) => void;
   roomCode: string | null;
   playerNumber: number | null;
   waiting: boolean;
@@ -53,6 +53,7 @@ export default function Lobby({
   const [selectedTheme, setSelectedTheme] = useState('kingdom');
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [timerPopup, setTimerPopup] = useState<'bot' | 'create' | 'join' | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -271,7 +272,7 @@ export default function Lobby({
                   {/* Buttons */}
                   <div className="space-y-3">
                     {onPlayBot && (
-                      <button onClick={() => onPlayBot(nickname || 'Player 1', selectedTheme)}
+                      <button onClick={() => setTimerPopup('bot')}
                         className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-500
                           transition-all duration-200 active:scale-[0.99]
                           hover:shadow-xl hover:shadow-blue-600/25
@@ -280,7 +281,7 @@ export default function Lobby({
                       </button>
                     )}
                     <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => onCreateGame(nickname || 'Player 1', selectedTheme)}
+                      <button onClick={() => setTimerPopup('create')}
                         className="h-12 rounded-2xl bg-[#111827] border border-white/10 text-white/80
                           hover:bg-[#1a2035] hover:border-white/20 hover:text-white transition-all duration-200
                           font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
@@ -304,6 +305,46 @@ export default function Lobby({
           </div>
         )}
       </div>
+
+      {/* Timer selection popup */}
+      {timerPopup && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#0a0e18]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white text-center mb-1">Turn Timer</h3>
+            <p className="text-white/30 text-xs text-center mb-5">How long per move?</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                { label: 'No Timer', value: 0, icon: '♾️' },
+                { label: '20 Seconds', value: 20, icon: '⚡' },
+                { label: '40 Seconds', value: 40, icon: '⏱️' },
+                { label: '1 Minute', value: 60, icon: '🕐' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    const name = nickname || 'Player 1';
+                    if (timerPopup === 'bot' && onPlayBot) {
+                      onPlayBot(name, selectedTheme, opt.value);
+                    } else if (timerPopup === 'create') {
+                      onCreateGame(name, selectedTheme, opt.value);
+                    }
+                    setTimerPopup(null);
+                  }}
+                  className="h-14 rounded-xl bg-[#111827] border border-white/[0.08] text-white/80
+                    hover:bg-[#1a2035] hover:border-white/20 hover:text-white transition-all duration-200
+                    font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                >
+                  <span>{opt.icon}</span> {opt.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setTimerPopup(null)}
+              className="w-full mt-3 py-2 text-white/30 hover:text-white/60 text-xs transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error toast */}
       {error && (

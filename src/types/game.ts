@@ -129,6 +129,8 @@ export interface GameState {
   };
   awaitingSpotter?: boolean;
   roomTheme?: string;
+  turnTimer?: number; // seconds per turn, 0 = no timer
+  turnDeadline?: number; // timestamp when current turn expires
 }
 
 // What gets sent to each client (opponent pieces hidden)
@@ -154,6 +156,8 @@ export interface ClientGameState {
     adjacentTargets: Square[];
   };
   roomTheme?: string;
+  turnTimer?: number;
+  turnDeadline?: number;
   coinFlip?: {
     player1Name: string;
     player2Name: string;
