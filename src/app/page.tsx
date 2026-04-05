@@ -16,7 +16,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    socket = io({ autoConnect: true });
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
+    socket = io(socketUrl, { autoConnect: true });
 
     socket.on(S2C.ROOM_CREATED, (data: { roomCode: string; playerNumber: number; theme?: string }) => {
       setRoomCode(data.roomCode);

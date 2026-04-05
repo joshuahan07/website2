@@ -1,6 +1,5 @@
 import { createServer } from 'http';
 import { parse } from 'url';
-import next from 'next';
 import { Server as SocketIOServer } from 'socket.io';
 import {
   GameState, PlayerNumber, PlacedPiece, Square, Rank,
@@ -14,12 +13,10 @@ import {
 import { C2S, S2C } from './src/lib/socketEvents';
 import { botPlacePieces, botChooseMove, botSpotterPredict } from './src/lib/botLogic';
 
+const STANDALONE = process.env.STANDALONE === 'true';
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT || '4000', 10);
-
-const app = next({ dev, hostname, port });
-const handle = app.getRequestHandler();
 
 // ── In-memory game store ─────────────────────────────────
 
@@ -220,14 +217,20 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
 
 // ── Start server ─────────────────────────────────────────
 
-app.prepare().then(() => {
+function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
   const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url!, true);
-    handle(req, res, parsedUrl);
+    if (handler) {
+      const parsedUrl = parse(req.url!, true);
+      handler(req, res, parsedUrl);
+    } else {
+      // Standalone mode: simple health check
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', mode: 'standalone' }));
+    }
   });
 
   const io = new SocketIOServer(server, {
-    cors: { origin: '*' },
+    cors: { origin: '*', methods: ['GET', 'POST'] },
     pingTimeout: 30000,
     pingInterval: 10000,
   });
@@ -782,7 +785,20 @@ app.prepare().then(() => {
     });
   });
 
-  server.listen(port, () => {
-    console.log(`> Stratego server ready on http://${hostname}:${port}`);
+  server.listen(port, hostname, () => {
+    console.log(`> Outrank server ready on http://${hostname}:${port} (${STANDALONE ? 'standalone' : 'with Next.js'})`);
   });
-});
+}
+
+if (STANDALONE) {
+  // Standalone mode: socket server only, no Next.js
+  startServer();
+} else {
+  // Dev mode: socket server + Next.js
+  const next = require('next');
+  const app = next({ dev, hostname, port });
+  const handle = app.getRequestHandler();
+  app.prepare().then(() => {
+    startServer(handle);
+  });
+}

@@ -107,7 +107,8 @@ export default function GamePage() {
     roomCode.current = storedRoom;
     myPlayer.current = parseInt(storedPlayer) as PlayerNumber;
 
-    socket = io({ autoConnect: true });
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || '';
+    socket = io(socketUrl, { autoConnect: true });
 
     socket.on('connect', () => {
       const storedNickname = sessionStorage.getItem('nickname');
