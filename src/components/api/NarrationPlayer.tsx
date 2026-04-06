@@ -45,13 +45,13 @@ const NarrationPlayer = forwardRef<NarrationPlayerHandle, NarrationPlayerProps>(
       return () => clearFadeTimer();
     }, [clearFadeTimer]);
 
-    // When speech ends, start fade-out timer
+    // When speech ends, hide subtitle immediately
     useEffect(() => {
       if (!isSpeaking && text) {
         clearFadeTimer();
         fadeTimerRef.current = setTimeout(() => {
           setVisible(false);
-        }, 2000);
+        }, 300);
       }
     }, [isSpeaking, text, clearFadeTimer]);
 

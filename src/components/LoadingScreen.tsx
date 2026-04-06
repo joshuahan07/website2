@@ -23,7 +23,7 @@ export default function LoadingScreen() {
         </div>
 
         <h2 className="text-2xl font-black text-white mb-2 tracking-wide">
-          <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">OUT</span><span className="text-white/90">RANK</span>
+          <span className="text-white">OUTRANK</span>
         </h2>
         <p className="text-white/30 text-sm animate-pulse">Loading {theme.name} battlefield...</p>
       </div>
