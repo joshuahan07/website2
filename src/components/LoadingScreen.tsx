@@ -25,7 +25,11 @@ export default function LoadingScreen() {
         <h2 className="text-2xl font-black text-white mb-2 tracking-wide">
           <span className="text-white">OUTRANK</span>
         </h2>
-        <p className="text-white/30 text-sm animate-pulse">Loading {theme.name} battlefield...</p>
+        <p className="text-white/30 text-sm animate-pulse mb-6">Loading {theme.name} battlefield...</p>
+        <a href="/"
+          className="text-white/25 hover:text-white/60 text-xs transition-colors underline underline-offset-2">
+          Back to Home
+        </a>
       </div>
     </div>
   );
