@@ -344,7 +344,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
     // ── JOIN ROOM ────────────────────────────────────────
 
-    socket.on(C2S.JOIN_ROOM, (data: { roomCode: string; nickname?: string }) => {
+    socket.on(C2S.JOIN_ROOM, (data: { roomCode: string; nickname?: string; playerNumber?: number }) => {
       const code = data.roomCode.toUpperCase().trim();
       const game = games.get(code);
 
@@ -353,16 +353,32 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
         return;
       }
 
-      // Check for reconnection
-      const disconnectedPlayer = game.players.find(
-        p => !p.connected && p.number !== undefined
-      );
+      // Check for reconnection — match by playerNumber first (handles race condition
+      // where old socket hasn't timed out yet), then fall back to any disconnected player
+      let reconnectPlayer = data.playerNumber
+        ? game.players.find(p => p.number === data.playerNumber && p.id !== socket.id)
+        : null;
 
-      if (disconnectedPlayer) {
-        // Reconnect
-        const oldId = disconnectedPlayer.id;
-        disconnectedPlayer.id = socket.id;
-        disconnectedPlayer.connected = true;
+      if (!reconnectPlayer) {
+        reconnectPlayer = game.players.find(
+          p => !p.connected && p.number !== undefined
+        );
+      }
+
+      if (reconnectPlayer) {
+        const oldId = reconnectPlayer.id;
+
+        // Leave old socket from the room if it's still connected
+        if (oldId !== 'bot' && oldId !== socket.id) {
+          const oldSocket = io.sockets.sockets.get(oldId);
+          if (oldSocket) {
+            oldSocket.leave(code);
+            socketToRoom.delete(oldId);
+          }
+        }
+
+        reconnectPlayer.id = socket.id;
+        reconnectPlayer.connected = true;
 
         // Clear disconnect timer
         const timer = disconnectTimers.get(oldId);
@@ -376,18 +392,18 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
         socket.emit(S2C.ROOM_JOINED, {
           roomCode: code,
-          playerNumber: disconnectedPlayer.number,
+          playerNumber: reconnectPlayer.number,
           theme: game.roomTheme,
         });
 
         // Notify opponent
-        const opponent = game.players.find(p => p.number !== disconnectedPlayer.number);
-        if (opponent && opponent.connected) {
+        const opponent = game.players.find(p => p.number !== reconnectPlayer!.number);
+        if (opponent && opponent.connected && opponent.id !== 'bot') {
           io.to(opponent.id).emit(S2C.OPPONENT_RECONNECTED);
         }
 
         sendGameState(io, game);
-        console.log(`Player ${disconnectedPlayer.number} reconnected to ${code}`);
+        console.log(`Player ${reconnectPlayer.number} reconnected to ${code}`);
         return;
       }
 

@@ -140,7 +140,11 @@ export default function GamePage() {
 
     socket.on('connect', () => {
       const storedNickname = sessionStorage.getItem('nickname');
-      socket?.emit(C2S.JOIN_ROOM, { roomCode: storedRoom, nickname: storedNickname || undefined });
+      socket?.emit(C2S.JOIN_ROOM, {
+        roomCode: storedRoom,
+        nickname: storedNickname || undefined,
+        playerNumber: parseInt(storedPlayer!) as PlayerNumber,
+      });
     });
 
     const storedTheme = sessionStorage.getItem('roomTheme');

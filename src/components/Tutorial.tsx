@@ -74,6 +74,17 @@ export default function Tutorial({ onClose }: TutorialProps) {
 
           <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
             <div className="flex items-center gap-3 mb-2">
+              <PieceIcon rank="1" />
+              <div>
+                <h4 className="text-sm font-bold text-cyan-400">{n('1')} (Spotter)</h4>
+                <p className="text-xs text-white/40">Rank 1</p>
+              </div>
+            </div>
+            <p className="text-xs text-white/50">If this piece moves into an empty square and there is an enemy piece <span className="text-white">directly in front of it</span> after it moves, you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> without combat.</p>
+          </div>
+
+          <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+            <div className="flex items-center gap-3 mb-2">
               <PieceIcon rank="2" />
               <div>
                 <h4 className="text-sm font-bold text-green-400">{n('2')} (Scout)</h4>
@@ -92,17 +103,6 @@ export default function Tutorial({ onClose }: TutorialProps) {
               </div>
             </div>
             <p className="text-xs text-white/50">The only piece that can <span className="text-white">defuse {n('B')}s</span> 💥. All other pieces that attack a {n('B')} are destroyed.</p>
-          </div>
-
-          <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
-            <div className="flex items-center gap-3 mb-2">
-              <PieceIcon rank="1" />
-              <div>
-                <h4 className="text-sm font-bold text-cyan-400">{n('1')} (Spotter)</h4>
-                <p className="text-xs text-white/40">Rank 1</p>
-              </div>
-            </div>
-            <p className="text-xs text-white/50">If this piece moves into an empty square and there is an enemy piece <span className="text-white">directly in front of it</span> after it moves, you get to <span className="text-white">guess its rank</span>. If your prediction is correct, the enemy piece is <span className="text-white">instantly destroyed</span> without combat.</p>
           </div>
         </div>
       ),
