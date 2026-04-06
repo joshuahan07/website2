@@ -23,7 +23,7 @@ import CoinFlip from '@/components/CoinFlip';
 import Tutorial from '@/components/Tutorial';
 import LoadingScreen from '@/components/LoadingScreen';
 import { SFX } from '@/lib/sounds';
-import { startMusic, stopMusic } from '@/lib/ambientMusic';
+import { startMusic, stopMusic, setMusicVolume } from '@/lib/ambientMusic';
 import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
 import NotificationManager from '@/components/api/NotificationManager';
@@ -640,6 +640,17 @@ export default function GamePage() {
           >
             {musicPlaying ? '🎵' : '🎶'}
           </button>
+          {musicPlaying && (
+            <input
+              type="range"
+              min="0"
+              max="50"
+              defaultValue="25"
+              onChange={e => setMusicVolume(parseInt(e.target.value) / 100)}
+              className="w-16 h-1 accent-blue-400 cursor-pointer"
+              title="Music volume"
+            />
+          )}
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
