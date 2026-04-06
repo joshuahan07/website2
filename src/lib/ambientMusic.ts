@@ -1,114 +1,77 @@
-// Ambient background music using Web Audio API - no files needed
-// Creates theme-specific drone/pad sounds
+// Background music player using HTML5 Audio
 
-let audioCtx: AudioContext | null = null;
-let masterGain: GainNode | null = null;
+let audio: HTMLAudioElement | null = null;
 let isPlaying = false;
-let oscillators: OscillatorNode[] = [];
-let gains: GainNode[] = [];
+let currentTheme: string | null = null;
 
-function getCtx() {
-  if (!audioCtx && typeof window !== 'undefined') {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0;
-    masterGain.connect(audioCtx.destination);
-  }
-  return { ctx: audioCtx!, master: masterGain! };
-}
-
-function createPad(freq: number, type: OscillatorType, vol: number, detune = 0) {
-  const { ctx, master } = getCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.value = freq;
-  osc.detune.value = detune;
-  gain.gain.value = vol;
-  osc.connect(gain);
-  gain.connect(master);
-  osc.start();
-  oscillators.push(osc);
-  gains.push(gain);
-  return { osc, gain };
-}
-
-// Slow LFO to modulate volume for movement
-function createLFO(target: AudioParam, rate: number, amount: number) {
-  const { ctx } = getCtx();
-  const lfo = ctx.createOscillator();
-  const lfoGain = ctx.createGain();
-  lfo.type = 'sine';
-  lfo.frequency.value = rate;
-  lfoGain.gain.value = amount;
-  lfo.connect(lfoGain);
-  lfoGain.connect(target);
-  lfo.start();
-  oscillators.push(lfo);
-}
-
-const THEMES = {
-  kingdom: () => {
-    // Medieval: low strings drone in D minor
-    createPad(73.42, 'sawtooth', 0.03, -5);   // D2
-    createPad(73.42, 'sawtooth', 0.03, 5);    // D2 detuned (chorus)
-    createPad(110, 'triangle', 0.025);          // A2
-    createPad(146.83, 'sine', 0.02);            // D3
-    const p = createPad(220, 'sine', 0.015);    // A3 (fifth)
-    createLFO(p.gain.gain, 0.08, 0.008);        // Slow volume swell
-  },
-  pirate: () => {
-    // Ocean: deeper, more mysterious, sea shanty feel
-    createPad(65.41, 'sawtooth', 0.025, -8);   // C2
-    createPad(65.41, 'sawtooth', 0.025, 8);    // C2 chorus
-    createPad(98, 'triangle', 0.02);             // G2
-    createPad(130.81, 'sine', 0.018);            // C3
-    const p = createPad(196, 'sine', 0.012);     // G3
-    createLFO(p.gain.gain, 0.05, 0.006);         // Very slow swell (like waves)
-  },
-  greek: () => {
-    // Olympian: ethereal, mystical, open fifths
-    createPad(82.41, 'sine', 0.03);              // E2
-    createPad(123.47, 'triangle', 0.025);        // B2
-    createPad(164.81, 'sine', 0.02, 3);          // E3
-    createPad(246.94, 'sine', 0.015);             // B3
-    const p = createPad(329.63, 'sine', 0.01);   // E4 (high shimmer)
-    createLFO(p.gain.gain, 0.12, 0.005);
-  },
+const TRACKS: Record<string, string> = {
+  kingdom: '/audio/kingdom.mp3',
+  pirate: '/audio/pirate.mp3',
+  greek: '/audio/greek.mp3',
 };
 
 export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
-  if (isPlaying) stopMusic();
+  if (typeof window === 'undefined') return;
 
-  const { master } = getCtx();
-  if (audioCtx?.state === 'suspended') audioCtx.resume();
+  // If same theme is already playing, don't restart
+  if (isPlaying && currentTheme === theme) return;
 
-  THEMES[theme]();
-  isPlaying = true;
+  stopMusic();
 
-  // Fade in over 3 seconds
-  master.gain.setValueAtTime(0, audioCtx!.currentTime);
-  master.gain.linearRampToValueAtTime(1, audioCtx!.currentTime + 3);
+  audio = new Audio(TRACKS[theme]);
+  audio.loop = true;
+  audio.volume = 0;
+
+  // Fade in
+  audio.addEventListener('error', () => {
+    // Audio file not available (deployed without audio files)
+    isPlaying = false;
+    currentTheme = null;
+  });
+
+  audio.play().then(() => {
+    isPlaying = true;
+    currentTheme = theme;
+    let vol = 0;
+    const fadeIn = setInterval(() => {
+      vol += 0.02;
+      if (vol >= 0.3) {
+        vol = 0.3;
+        clearInterval(fadeIn);
+      }
+      if (audio) audio.volume = vol;
+    }, 50);
+  }).catch(() => {
+    // Autoplay blocked - will start on next user interaction
+    isPlaying = false;
+  });
 }
 
 export function stopMusic() {
-  if (!isPlaying || !masterGain || !audioCtx) return;
+  if (!audio) return;
 
-  // Fade out over 1 second
-  masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+  const fadingAudio = audio;
+  let vol = fadingAudio.volume;
 
-  setTimeout(() => {
-    oscillators.forEach(o => { try { o.stop(); } catch {} });
-    oscillators = [];
-    gains = [];
-    isPlaying = false;
-  }, 1200);
+  // Fade out
+  const fadeOut = setInterval(() => {
+    vol -= 0.03;
+    if (vol <= 0) {
+      vol = 0;
+      fadingAudio.pause();
+      fadingAudio.src = '';
+      clearInterval(fadeOut);
+    }
+    try { fadingAudio.volume = vol; } catch {}
+  }, 50);
+
+  audio = null;
+  isPlaying = false;
+  currentTheme = null;
 }
 
 export function setMusicVolume(vol: number) {
-  if (!masterGain || !audioCtx) return;
-  masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  if (audio) audio.volume = Math.max(0, Math.min(1, vol));
 }
 
 export function isMusicPlaying() {

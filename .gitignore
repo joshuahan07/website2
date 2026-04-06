@@ -28,6 +28,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# Large audio files (too big for git, served locally)
+/public/audio/
+
 # vercel
 .vercel
 
