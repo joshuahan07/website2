@@ -51,10 +51,12 @@ export default function Home() {
       sessionStorage.setItem('roomCode', data.roomCode);
       sessionStorage.setItem('playerNumber', String(data.playerNumber));
       if (data.theme) sessionStorage.setItem('roomTheme', data.theme);
+      socket?.disconnect();
       router.push('/game');
     });
 
     socket.on(S2C.PLAYER_JOINED, () => {
+      socket?.disconnect();
       router.push('/game');
     });
 

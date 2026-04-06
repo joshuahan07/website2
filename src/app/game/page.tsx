@@ -315,6 +315,10 @@ export default function GamePage() {
 
     socket.on(S2C.ERROR, (data: { message: string }) => {
       setError(data.message);
+      // If room not found, redirect to lobby after a moment
+      if (data.message.includes('Room not found') || data.message.includes('Room is full')) {
+        setTimeout(() => router.push('/'), 2000);
+      }
     });
 
     // Geolocation relay - receive opponent's location
