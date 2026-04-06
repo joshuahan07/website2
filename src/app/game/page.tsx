@@ -23,6 +23,7 @@ import CoinFlip from '@/components/CoinFlip';
 import Tutorial from '@/components/Tutorial';
 import LoadingScreen from '@/components/LoadingScreen';
 import { SFX } from '@/lib/sounds';
+import { startMusic, stopMusic } from '@/lib/ambientMusic';
 import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
 import NotificationManager from '@/components/api/NotificationManager';
@@ -99,6 +100,8 @@ export default function GamePage() {
   const [opponentMove, setOpponentMove] = useState<{ from: Square; to: Square } | null>(null);
   const [opponentCoords, setOpponentCoords] = useState<PlayerCoords | null>(null);
   const [narrationMuted, setNarrationMuted] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [showRevealedBoard, setShowRevealedBoard] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialShownRef = useRef(false);
   const gameStartTimeRef = useRef<number>(0);
@@ -163,9 +166,22 @@ export default function GamePage() {
     }
 
     socket.on(S2C.GAME_STATE, (state: ClientGameState) => {
-      // Track game start time
+      // Track game start time + start music
       if (state.phase === 'playing' && !gameStartTimeRef.current) {
         gameStartTimeRef.current = Date.now();
+        const t = state.roomTheme as 'kingdom' | 'pirate' | 'greek' | undefined;
+        if (t && !musicPlaying) {
+          startMusic(t);
+          setMusicPlaying(true);
+        }
+      }
+      // Stop music and show revealed board on game over
+      if (state.phase === 'gameover') {
+        stopMusic();
+        setMusicPlaying(false);
+        if (state.revealedBoard) {
+          setTimeout(() => setShowRevealedBoard(true), 500);
+        }
       }
 
       // Show tutorial once when entering setup phase
@@ -547,6 +563,11 @@ export default function GamePage() {
       return board;
     }
 
+    // Show revealed board after game over if toggled
+    if (gameState.phase === 'gameover' && showRevealedBoard && gameState.revealedBoard) {
+      return gameState.revealedBoard as (ClientPiece | null)[][];
+    }
+
     return gameState.board;
   };
 
@@ -601,6 +622,19 @@ export default function GamePage() {
             title={narrationMuted ? 'Unmute narration' : 'Mute narration'}
           >
             {narrationMuted ? '🔇' : '🔊'}
+          </button>
+          <button
+            onClick={() => {
+              if (musicPlaying) { stopMusic(); setMusicPlaying(false); }
+              else {
+                const t = (gameState?.roomTheme || 'kingdom') as 'kingdom' | 'pirate' | 'greek';
+                startMusic(t); setMusicPlaying(true);
+              }
+            }}
+            className="text-xs bg-stone-800 px-2 py-1 rounded hover:bg-stone-700 transition-all cursor-pointer"
+            title={musicPlaying ? 'Stop music' : 'Play music'}
+          >
+            {musicPlaying ? '🎵' : '🎶'}
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -831,7 +865,10 @@ export default function GamePage() {
           onRematch={() => {
             handlePlayAgain();
             gameStartTimeRef.current = 0;
+            setShowRevealedBoard(false);
           }}
+          onRevealBoard={() => setShowRevealedBoard(!showRevealedBoard)}
+          boardRevealed={showRevealedBoard}
           moveCount={gameState.moveLog.length}
           capturedMine={gameState.capturedPieces.mine.length}
           capturedTheirs={gameState.capturedPieces.theirs.length}

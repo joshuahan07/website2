@@ -12,6 +12,8 @@ interface GameOverModalProps {
   reason: string;
   onPlayAgain: () => void;
   onRematch?: () => void;
+  onRevealBoard?: () => void;
+  boardRevealed?: boolean;
   moveCount?: number;
   capturedMine?: number;
   capturedTheirs?: number;
@@ -19,7 +21,7 @@ interface GameOverModalProps {
 }
 
 export default function GameOverModal({
-  winner, myPlayer, reason, onPlayAgain, onRematch,
+  winner, myPlayer, reason, onPlayAgain, onRematch, onRevealBoard, boardRevealed,
   moveCount, capturedMine, capturedTheirs, gameDuration,
 }: GameOverModalProps) {
   const isWinner = winner === myPlayer;
@@ -169,6 +171,18 @@ export default function GameOverModal({
               >
                 Back to Lobby
               </button>
+              {onRevealBoard && (
+                <button
+                  onClick={onRevealBoard}
+                  className={`w-full py-2.5 rounded-2xl font-semibold text-xs transition-all active:scale-[0.99] ${
+                    boardRevealed
+                      ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+                      : 'bg-white/[0.04] border border-white/[0.08] text-white/40 hover:bg-white/[0.08] hover:text-white'
+                  }`}
+                >
+                  {boardRevealed ? '👁️ Board Revealed' : '👁️ Reveal Full Board'}
+                </button>
+              )}
             </div>
           </div>
         </div>

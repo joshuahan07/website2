@@ -88,6 +88,10 @@ function sendGameState(io: SocketIOServer, game: GameState) {
       clientState.roomTheme = game.roomTheme;
       clientState.turnTimer = game.turnTimer;
       clientState.turnDeadline = game.turnDeadline;
+      // Reveal full board after game over
+      if (game.phase === 'gameover') {
+        clientState.revealedBoard = game.board;
+      }
       io.to(player.id).emit(S2C.GAME_STATE, clientState);
     }
   }

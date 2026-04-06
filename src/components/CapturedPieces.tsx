@@ -50,8 +50,8 @@ function CaptureGrid({ pieces, label, color, highlightColor }: {
                 hasCaptured ? 'bg-stone-800/60' : 'opacity-30'
               }`}
             >
-              {/* Circular clipped image */}
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-stone-900 ring-1 ring-stone-700/50 flex-shrink-0">
+              {/* Circular clipped image - animated on arrival */}
+              <div className={`w-9 h-9 rounded-full overflow-hidden bg-stone-900 ring-1 ring-stone-700/50 flex-shrink-0 ${hasCaptured ? 'graveyard-arrive' : ''}`}>
                 {imgSrc && !failedImgs.has(rank) ? (
                   <img
                     src={imgSrc}

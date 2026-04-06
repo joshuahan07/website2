@@ -317,6 +317,28 @@
   50% { opacity: 1; }
 }
 
+/* Piece captured - fly to graveyard */
+@keyframes graveyardFly {
+  0% { transform: scale(1); opacity: 1; }
+  30% { transform: scale(1.3) rotate(10deg); opacity: 0.8; filter: brightness(2); }
+  100% { transform: scale(0.3) translateX(-100px) translateY(-50px) rotate(-30deg); opacity: 0; }
+}
+
+.graveyard-fly {
+  animation: graveyardFly 0.8s ease-in forwards;
+}
+
+/* Piece appears in captured sidebar */
+@keyframes graveyardArrive {
+  0% { transform: scale(0) rotate(180deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(-10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.graveyard-arrive {
+  animation: graveyardArrive 0.5s ease-out;
+}
+
 /* Pirate lose: ship sinking */
 @keyframes pirate-sink {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }

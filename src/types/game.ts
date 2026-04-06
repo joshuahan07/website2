@@ -158,6 +158,7 @@ export interface ClientGameState {
   roomTheme?: string;
   turnTimer?: number;
   turnDeadline?: number;
+  revealedBoard?: (PlacedPiece | null)[][]; // full board shown after game over
   coinFlip?: {
     player1Name: string;
     player2Name: string;
