@@ -5,9 +5,9 @@ let isPlaying = false;
 let currentTheme: string | null = null;
 
 const TRACKS: Record<string, string> = {
-  kingdom: '/audio/kingdom.mp3',
-  pirate: '/audio/pirate.mp3',
-  greek: '/audio/greek.mp3',
+  kingdom: 'https://drive.google.com/uc?export=download&id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM',
+  pirate: 'https://drive.google.com/uc?export=download&id=1YWyjCDn9sfJdlhBPfxQ3hlEHfK81UOTL',
+  greek: 'https://drive.google.com/uc?export=download&id=1OMfe6oG1uNX-6U3FCg26yjvRFOvNMMBc',
 };
 
 export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
