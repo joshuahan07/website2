@@ -124,6 +124,11 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
   }
 
   if (result.reveal) {
+    // Clear timer during battle animation
+    const et = turnTimers.get(roomCode);
+    if (et) { clearTimeout(et); turnTimers.delete(roomCode); }
+    game.turnDeadline = undefined;
+
     // Send game state FIRST so the client sees the piece move + arrow
     // Then send reveal event slightly after so the battle card shows after the slide
     sendGameState(io, game);
@@ -141,6 +146,9 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
         io.to(roomCode).emit(S2C.GAME_OVER, result.gameOver);
         sendGameState(io, game);
       }, 1500 + result.reveal.duration + 500);
+    } else {
+      // Restart turn timer after battle animation
+      setTimeout(() => startTurnTimer(io, game, roomCode), 1500 + result.reveal.duration + 500);
     }
     return;
   }
@@ -248,6 +256,11 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
   }
 
   sendGameState(io, game);
+
+  // Restart turn timer for human player after bot's non-combat move
+  if (!result.gameOver) {
+    startTurnTimer(io, game, roomCode);
+  }
 }
 
 // ── Start server ─────────────────────────────────────────
@@ -600,6 +613,11 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
         return;
       }
+
+      // Clear turn timer/deadline during transition
+      const existingTimer = turnTimers.get(roomCode);
+      if (existingTimer) { clearTimeout(existingTimer); turnTimers.delete(roomCode); }
+      game.turnDeadline = undefined;
 
       // Send game over if applicable
       if (result.gameOver) {

@@ -32,13 +32,18 @@ import useGeolocation from '@/hooks/useGeolocation';
 
 let socket: Socket | null = null;
 
-function TurnTimer({ active, deadline }: { active: boolean; deadline?: number }) {
+function TurnTimer({ active, deadline, paused }: { active: boolean; deadline?: number; paused?: boolean }) {
   const [display, setDisplay] = useState('0:00');
   const [isUrgent, setIsUrgent] = useState(false);
 
   useEffect(() => {
-    if (deadline && deadline > 0) {
-      // Countdown mode
+    if (paused) {
+      setIsUrgent(false);
+      return;
+    }
+
+    if (deadline && deadline > 0 && active) {
+      // Countdown mode - only show when it's your turn
       const update = () => {
         const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         const mins = Math.floor(remaining / 60);
@@ -49,8 +54,8 @@ function TurnTimer({ active, deadline }: { active: boolean; deadline?: number })
       update();
       const interval = setInterval(update, 200);
       return () => clearInterval(interval);
-    } else {
-      // Count up mode (no timer)
+    } else if (!deadline || deadline <= 0) {
+      // Count up mode (no timer set)
       let count = 0;
       setIsUrgent(false);
       if (!active) { setDisplay('0:00'); return; }
@@ -61,6 +66,10 @@ function TurnTimer({ active, deadline }: { active: boolean; deadline?: number })
         setDisplay(`${mins}:${secs.toString().padStart(2, '0')}`);
       }, 1000);
       return () => clearInterval(interval);
+    } else {
+      // Opponent's turn with timer - show waiting
+      setDisplay('--');
+      setIsUrgent(false);
     }
   }, [active, deadline]);
 
@@ -107,6 +116,7 @@ export default function GamePage() {
   const roomCode = useRef<string>('');
   const revealTimerRef = useRef<NodeJS.Timeout | null>(null);
   const revealShowTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const revealSafetyRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleCopyRoomCode = useCallback(() => {
     if (!roomCode.current) return;
@@ -198,7 +208,7 @@ export default function GamePage() {
     });
 
     socket.on(S2C.REVEAL_EVENT, (event: RevealEvent) => {
-      // Clear any existing timers to prevent stale reveals
+      // Clear ALL existing timers to prevent stale reveals from killing new ones
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
         revealTimerRef.current = null;
@@ -207,6 +217,10 @@ export default function GamePage() {
         clearTimeout(revealShowTimerRef.current);
         revealShowTimerRef.current = null;
       }
+      if (revealSafetyRef.current) {
+        clearTimeout(revealSafetyRef.current);
+        revealSafetyRef.current = null;
+      }
 
       // Delay the battle popup so the piece slide/arrow plays out fully first
       // Slide = 400ms, arrow = 1100ms, plus render buffer
@@ -214,6 +228,7 @@ export default function GamePage() {
 
       // Show the battle card and revealing squares together after the delay
       revealShowTimerRef.current = setTimeout(() => {
+        revealShowTimerRef.current = null;
         const squares = new Set<string>();
         for (const p of event.pieces) {
           squares.add(`${p.position.row},${p.position.col}`);
@@ -248,10 +263,11 @@ export default function GamePage() {
         setRevealEvent(null);
         setRevealingSquares(new Set());
         revealTimerRef.current = null;
-      }, event.duration + showDelay - 500);
+      }, event.duration + showDelay);
 
-      // Safety fallback: force clear after 8 seconds max no matter what
-      setTimeout(() => {
+      // Safety fallback: force clear after 8 seconds max — tracked so it can be cancelled
+      revealSafetyRef.current = setTimeout(() => {
+        revealSafetyRef.current = null;
         setRevealEvent(null);
         setRevealingSquares(new Set());
       }, 8000);
@@ -600,7 +616,7 @@ export default function GamePage() {
           </span>
           {gameState.phase === 'playing' && (
             <div className="flex items-center gap-2">
-              <TurnTimer active={isMyTurn} deadline={gameState.turnDeadline} />
+              <TurnTimer active={isMyTurn} deadline={gameState.turnDeadline} paused={!!revealEvent} />
               <span className={`text-sm font-bold px-3 py-1 rounded transition-all flex items-center gap-1.5 ${
                 isMyTurn
                   ? 'bg-green-600/30 text-green-400 border border-green-500/50 turn-glow'
