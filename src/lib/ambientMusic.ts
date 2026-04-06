@@ -3,6 +3,7 @@
 let audio: HTMLAudioElement | null = null;
 let isPlaying = false;
 let currentTheme: string | null = null;
+let pendingTheme: string | null = null;
 
 const TRACKS: Record<string, string> = {
   kingdom: 'https://drive.google.com/uc?export=download&id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM',
@@ -24,27 +25,46 @@ export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
 
   // Fade in
   audio.addEventListener('error', () => {
-    // Audio file not available (deployed without audio files)
     isPlaying = false;
     currentTheme = null;
   });
 
-  audio.play().then(() => {
-    isPlaying = true;
-    currentTheme = theme;
-    let vol = 0;
-    const fadeIn = setInterval(() => {
-      vol += 0.02;
-      if (vol >= 0.3) {
-        vol = 0.3;
-        clearInterval(fadeIn);
+  const tryPlay = () => {
+    if (!audio) return;
+    audio.play().then(() => {
+      isPlaying = true;
+      currentTheme = theme;
+      pendingTheme = null;
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol += 0.02;
+        if (vol >= 0.3) {
+          vol = 0.3;
+          clearInterval(fadeIn);
+        }
+        if (audio) audio.volume = vol;
+      }, 50);
+    }).catch(() => {
+      // Autoplay blocked - retry on next user interaction
+      pendingTheme = theme;
+      isPlaying = false;
+    });
+  };
+
+  tryPlay();
+
+  // If autoplay was blocked, retry on any click/touch
+  if (!isPlaying && typeof document !== 'undefined') {
+    const retryOnInteraction = () => {
+      if (pendingTheme && !isPlaying) {
+        startMusic(pendingTheme as 'kingdom' | 'pirate' | 'greek');
       }
-      if (audio) audio.volume = vol;
-    }, 50);
-  }).catch(() => {
-    // Autoplay blocked - will start on next user interaction
-    isPlaying = false;
-  });
+      document.removeEventListener('click', retryOnInteraction);
+      document.removeEventListener('touchstart', retryOnInteraction);
+    };
+    document.addEventListener('click', retryOnInteraction, { once: true });
+    document.addEventListener('touchstart', retryOnInteraction, { once: true });
+  }
 }
 
 export function stopMusic() {

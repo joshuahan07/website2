@@ -537,12 +537,12 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
         // If bot game and bot goes first, wait for coin flip animation (2.5s) + small buffer before bot moves
         if (botGames.has(roomCode) && game.currentTurn === 2) {
-          setTimeout(() => executeBotTurn(io, roomCode), 3500);
+          setTimeout(() => executeBotTurn(io, roomCode), 2500);
         }
 
         // Start turn timer after coin flip animation
         if (game.turnTimer && game.turnTimer > 0) {
-          setTimeout(() => startTurnTimer(io, game, roomCode), 3000);
+          setTimeout(() => startTurnTimer(io, game, roomCode), 2500);
         }
       }
     });

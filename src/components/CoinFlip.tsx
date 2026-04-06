@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface CoinFlipProps {
   player1Name: string;
@@ -11,16 +11,17 @@ interface CoinFlipProps {
 
 export default function CoinFlip({ player1Name, player2Name, winner, onComplete }: CoinFlipProps) {
   const [phase, setPhase] = useState<'spinning' | 'result'>('spinning');
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    // Show spinning for 1.5 seconds, then result for 1 second
-    const spinTimer = setTimeout(() => setPhase('result'), 1500);
-    const doneTimer = setTimeout(() => onComplete(), 2500);
+    const spinTimer = setTimeout(() => setPhase('result'), 1200);
+    const doneTimer = setTimeout(() => onCompleteRef.current(), 2000);
     return () => {
       clearTimeout(spinTimer);
       clearTimeout(doneTimer);
     };
-  }, [onComplete]);
+  }, []);
 
   const winnerName = winner === 1 ? player1Name : player2Name;
 

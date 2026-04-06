@@ -353,7 +353,7 @@
 }
 
 .coin-spinning {
-  animation: coinSpin 1.5s ease-in-out;
+  animation: coinSpin 1.2s ease-in-out;
 }
 
 /* Coin landed - show winner side */
