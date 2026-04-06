@@ -9,15 +9,12 @@ let userInteracted = false;
 // Try local files first (dev), then Google Drive (deployed)
 const TRACKS: Record<string, string[]> = {
   kingdom: [
-    '/audio/kingdom.mp3',
     'https://drive.usercontent.google.com/download?id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM&export=download',
   ],
   pirate: [
-    '/audio/pirate.mp3',
     'https://drive.usercontent.google.com/download?id=1YWyjCDn9sfJdlhBPfxQ3hlEHfK81UOTL&export=download',
   ],
   greek: [
-    '/audio/greek.mp3',
     'https://drive.usercontent.google.com/download?id=1OMfe6oG1uNX-6U3FCg26yjvRFOvNMMBc&export=download',
   ],
 };
