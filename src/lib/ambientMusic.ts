@@ -4,19 +4,11 @@ let audio: HTMLAudioElement | null = null;
 let isPlaying = false;
 let currentTheme: string | null = null;
 let pendingTheme: string | null = null;
-let userInteracted = false;
 
-// Try local files first (dev), then Google Drive (deployed)
-const TRACKS: Record<string, string[]> = {
-  kingdom: [
-    'https://drive.usercontent.google.com/download?id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM&export=download',
-  ],
-  pirate: [
-    'https://drive.usercontent.google.com/download?id=1YWyjCDn9sfJdlhBPfxQ3hlEHfK81UOTL&export=download',
-  ],
-  greek: [
-    'https://drive.usercontent.google.com/download?id=1OMfe6oG1uNX-6U3FCg26yjvRFOvNMMBc&export=download',
-  ],
+const TRACKS: Record<string, string> = {
+  kingdom: 'https://drive.usercontent.google.com/download?id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM&export=download',
+  pirate: 'https://drive.usercontent.google.com/download?id=1YWyjCDn9sfJdlhBPfxQ3hlEHfK81UOTL&export=download',
+  greek: 'https://drive.usercontent.google.com/download?id=1OMfe6oG1uNX-6U3FCg26yjvRFOvNMMBc&export=download',
 };
 
 function fadeIn(el: HTMLAudioElement, target = 0.25) {
@@ -29,79 +21,52 @@ function fadeIn(el: HTMLAudioElement, target = 0.25) {
   }, 50);
 }
 
-function tryPlayUrl(urls: string[], index: number, theme: string) {
-  if (index >= urls.length) {
-    isPlaying = false;
-    currentTheme = null;
-    return;
-  }
-
-  const el = new Audio();
-  el.crossOrigin = 'anonymous';
-  el.loop = true;
-  el.volume = 0;
-  el.preload = 'auto';
-  el.src = urls[index];
-
-  el.addEventListener('error', () => {
-    // Try next URL
-    tryPlayUrl(urls, index + 1, theme);
-  });
-
-  el.addEventListener('canplaythrough', () => {
-    // Only proceed if we haven't been stopped
-    if (currentTheme !== null && currentTheme !== theme) return;
-
-    audio = el;
-    el.play().then(() => {
-      isPlaying = true;
-      currentTheme = theme;
-      pendingTheme = null;
-      fadeIn(el);
-    }).catch(() => {
-      // Autoplay blocked - wait for interaction
-      pendingTheme = theme;
-      audio = el;
-      isPlaying = false;
-    });
-  }, { once: true });
-}
-
-// Listen for first user interaction to unlock audio
-if (typeof document !== 'undefined') {
-  const unlock = () => {
-    userInteracted = true;
-    if (pendingTheme && audio && !isPlaying) {
-      audio.play().then(() => {
-        isPlaying = true;
-        currentTheme = pendingTheme;
-        pendingTheme = null;
-        fadeIn(audio!);
-      }).catch(() => {});
-    }
-    document.removeEventListener('click', unlock);
-    document.removeEventListener('touchstart', unlock);
-    document.removeEventListener('keydown', unlock);
-  };
-  document.addEventListener('click', unlock);
-  document.addEventListener('touchstart', unlock);
-  document.addEventListener('keydown', unlock);
-}
-
 export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
   if (typeof window === 'undefined') return;
   if (isPlaying && currentTheme === theme) return;
 
   stopMusic();
+
+  const url = TRACKS[theme];
+  if (!url) return;
+
+  const el = new Audio();
+  // Don't set crossOrigin - let browser handle it natively
+  el.loop = true;
+  el.volume = 0;
+  el.preload = 'auto';
+  el.src = url;
+  audio = el;
   currentTheme = theme;
 
-  const urls = TRACKS[theme];
-  if (!urls) return;
+  el.addEventListener('error', () => {
+    console.log('Music failed to load for', theme);
+    isPlaying = false;
+    currentTheme = null;
+  });
 
-  tryPlayUrl(urls, 0, theme);
+  const doPlay = () => {
+    el.play().then(() => {
+      isPlaying = true;
+      pendingTheme = null;
+      fadeIn(el);
+    }).catch(() => {
+      // Autoplay blocked - set pending
+      pendingTheme = theme;
+      isPlaying = false;
+    });
+  };
+
+  // Try playing immediately, or when enough data is buffered
+  if (el.readyState >= 2) {
+    doPlay();
+  } else {
+    el.addEventListener('canplay', doPlay, { once: true });
+  }
 }
 
 export function stopMusic() {
+  pendingTheme = null;
   if (!audio) { isPlaying = false; currentTheme = null; return; }
 
   const fadingAudio = audio;
@@ -109,7 +74,8 @@ export function stopMusic() {
   audio = null;
   isPlaying = false;
   currentTheme = null;
-  pendingTheme = null;
+
+  if (vol <= 0) { fadingAudio.pause(); fadingAudio.src = ''; return; }
 
   const fadeOut = setInterval(() => {
     vol -= 0.02;
@@ -128,4 +94,25 @@ export function setMusicVolume(vol: number) {
 
 export function isMusicPlaying() {
   return isPlaying;
+}
+
+// Retry pending music on user interaction
+export function retryPendingMusic() {
+  if (pendingTheme && audio && !isPlaying) {
+    audio.play().then(() => {
+      isPlaying = true;
+      currentTheme = pendingTheme;
+      pendingTheme = null;
+      fadeIn(audio!);
+    }).catch(() => {});
+  }
+}
+
+// Set up global interaction listener
+if (typeof document !== 'undefined') {
+  const handler = () => {
+    retryPendingMusic();
+  };
+  document.addEventListener('click', handler);
+  document.addEventListener('touchstart', handler);
 }
