@@ -129,6 +129,15 @@ export default function Square({
     if (onPieceDragStart && piece && piece.owner === myPlayer) {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', `${row},${col}`);
+
+      // Use the circular piece element as the drag ghost instead of the full square
+      const target = e.currentTarget as HTMLElement;
+      const circle = target.querySelector('.rounded-full') as HTMLElement;
+      if (circle) {
+        const rect = circle.getBoundingClientRect();
+        e.dataTransfer.setDragImage(circle, rect.width / 2, rect.height / 2);
+      }
+
       onPieceDragStart(row, col);
     }
   };

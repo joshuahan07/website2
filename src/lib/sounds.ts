@@ -1,8 +1,18 @@
 // Web Audio API sound effects - no files needed
 const audioCtx = typeof window !== 'undefined' ? new (window.AudioContext || (window as any).webkitAudioContext)() : null;
 
+let sfxMuted = false;
+
+export function setSfxMuted(muted: boolean) {
+  sfxMuted = muted;
+}
+
+export function isSfxMuted() {
+  return sfxMuted;
+}
+
 function playTone(freq: number, duration: number, type: OscillatorType = 'sine', volume = 0.15) {
-  if (!audioCtx) return;
+  if (!audioCtx || sfxMuted) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
 
   const osc = audioCtx.createOscillator();
@@ -18,7 +28,7 @@ function playTone(freq: number, duration: number, type: OscillatorType = 'sine',
 }
 
 function playNoise(duration: number, volume = 0.1) {
-  if (!audioCtx) return;
+  if (!audioCtx || sfxMuted) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
 
   const bufferSize = audioCtx.sampleRate * duration;

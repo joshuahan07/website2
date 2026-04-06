@@ -22,7 +22,7 @@ import SetupTray from '@/components/SetupTray';
 import CoinFlip from '@/components/CoinFlip';
 import Tutorial from '@/components/Tutorial';
 import LoadingScreen from '@/components/LoadingScreen';
-import { SFX } from '@/lib/sounds';
+import { SFX, setSfxMuted } from '@/lib/sounds';
 import { startMusic, stopMusic, setMusicVolume } from '@/lib/ambientMusic';
 import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
@@ -619,11 +619,13 @@ export default function GamePage() {
           </button>
           <button
             onClick={() => {
+              const newMuted = !narrationMuted;
               narrationRef.current?.toggleMute();
-              setNarrationMuted(!narrationMuted);
+              setSfxMuted(newMuted);
+              setNarrationMuted(newMuted);
             }}
             className="text-xs bg-stone-800 px-2 py-1 rounded hover:bg-stone-700 transition-all cursor-pointer"
-            title={narrationMuted ? 'Unmute narration' : 'Mute narration'}
+            title={narrationMuted ? 'Unmute sounds' : 'Mute sounds'}
           >
             {narrationMuted ? '🔇' : '🔊'}
           </button>
@@ -644,7 +646,7 @@ export default function GamePage() {
             <input
               type="range"
               min="0"
-              max="50"
+              max="80"
               defaultValue="25"
               onChange={e => setMusicVolume(parseInt(e.target.value) / 100)}
               className="w-16 h-1 accent-blue-400 cursor-pointer"

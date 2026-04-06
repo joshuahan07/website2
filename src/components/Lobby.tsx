@@ -120,7 +120,7 @@ export default function Lobby({
                 </div>
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Connecting to server...</h2>
-              <p className="text-white/30 text-sm">Waking up the battlefield</p>
+              <p className="text-white/30 text-sm">Waking up the battlefield (may take up to 30 seconds)</p>
               <div className="w-48 h-1 bg-white/5 rounded-full mx-auto mt-6 overflow-hidden">
                 <div className="h-full bg-blue-500/50 rounded-full" style={{ animation: 'loadBar 2s ease-in-out infinite' }} />
               </div>
