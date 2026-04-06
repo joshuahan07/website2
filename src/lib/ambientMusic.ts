@@ -6,9 +6,9 @@ let currentTheme: string | null = null;
 let pendingTheme: string | null = null;
 
 const TRACKS: Record<string, string> = {
-  kingdom: 'https://drive.usercontent.google.com/download?id=1S-Qzv1x4YNoJ-A-VXtR4CdanHSdGZRrM&export=download',
-  pirate: 'https://drive.usercontent.google.com/download?id=1YWyjCDn9sfJdlhBPfxQ3hlEHfK81UOTL&export=download',
-  greek: 'https://drive.usercontent.google.com/download?id=1OMfe6oG1uNX-6U3FCg26yjvRFOvNMMBc&export=download',
+  kingdom: '/audio/kingdom.mp3',
+  pirate: '/audio/pirate.mp3',
+  greek: '/audio/greek.mp3',
 };
 
 function fadeIn(el: HTMLAudioElement, target = 0.25) {
