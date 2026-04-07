@@ -119,9 +119,9 @@ export async function fetchWeather(lat: number, lng: number): Promise<{ temp: nu
     if (!res.ok) return null;
     const data = await res.json();
     const temp = data?.temperature?.degrees;
-    const desc = data?.weatherCondition?.desc?.text || data?.weatherCondition?.description;
+    const desc = data?.weatherCondition?.description?.text || data?.weatherCondition?.type || '';
     if (temp == null) return null;
-    return { temp: Math.round(temp), description: desc || '' };
+    return { temp: Math.round(temp), description: typeof desc === 'string' ? desc : '' };
   } catch {
     return null;
   }
