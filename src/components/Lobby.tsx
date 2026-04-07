@@ -134,7 +134,7 @@ export default function Lobby({
           <div className="min-h-screen flex items-center justify-center p-6">
             <div className="w-full max-w-md text-center">
               <h1 className="text-5xl font-black mb-2 tracking-[0.08em]">
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">OUT</span>RANK
+                <span className="text-white">OUT</span><span className="text-white">RANK</span>
               </h1>
               <div className="w-12 h-0.5 bg-blue-500/50 mx-auto mb-8 rounded-full" />
               <p className="text-white/40 mb-5 text-sm">Share this code with your opponent</p>
@@ -153,7 +153,7 @@ export default function Lobby({
                 <div className="w-3.5 h-3.5 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
                 <span className="text-white/30 text-sm">Waiting for opponent...</span>
               </div>
-              <p className="text-white/15 text-xs mt-3">Playing as {nickname || `Player ${playerNumber}`}</p>
+              <p className="text-white/40 text-xs mt-3">Playing as {nickname || `Player ${playerNumber}`}</p>
             </div>
           </div>
 
@@ -174,13 +174,13 @@ export default function Lobby({
               </div>
               <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="• • • • • •" maxLength={6}
-                className="w-full px-4 py-6 bg-white/[0.04] border border-white/[0.08] rounded-2xl
+                className="w-full px-4 py-6 bg-white/[0.08] border border-white/15 rounded-2xl
                   text-center text-4xl font-mono tracking-[0.5em] text-white
                   focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10
-                  placeholder:text-white/10 placeholder:tracking-[0.5em] placeholder:text-2xl transition-all duration-300" />
+                  placeholder:text-white/25 placeholder:tracking-[0.5em] placeholder:text-2xl transition-all duration-300" />
               <button onClick={() => onJoinGame(joinCode, nickname || 'Player 2')} disabled={joinCode.length !== 6}
                 className="w-full mt-5 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-lg transition-all
-                  disabled:opacity-15 disabled:cursor-not-allowed text-white hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.99]">
+                  disabled:opacity-30 disabled:cursor-not-allowed text-white hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.99]">
                 Join Game →
               </button>
             </div>
