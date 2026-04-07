@@ -296,9 +296,6 @@ export default function Lobby({
                     </div>
                   </div>
 
-                  <p className="text-center text-white/15 text-[10px] mt-4 tracking-[0.2em] uppercase">
-                    No account required
-                  </p>
                 </div>
               </div>
             </div>

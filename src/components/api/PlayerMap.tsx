@@ -9,6 +9,10 @@ interface PlayerMapProps {
   player2: PlayerCoords | null;
   theme: ThemeId;
   isLoading?: boolean;
+  player1City?: string | null;
+  player2City?: string | null;
+  player1Weather?: string | null;
+  player2Weather?: string | null;
 }
 
 const MAP_WIDTH = 250;
@@ -46,7 +50,7 @@ const CONTINENT_PATHS = [
   'M108,26 L112,24 L114,28 L112,32 L108,30 Z',
 ];
 
-export default function PlayerMap({ player1, player2, theme, isLoading }: PlayerMapProps) {
+export default function PlayerMap({ player1, player2, theme, isLoading, player1City, player2City, player1Weather, player2Weather }: PlayerMapProps) {
   const t = getTheme(theme);
   const color1 = t.board.playerColors[1];
   const color2 = t.board.playerColors[2];
@@ -161,6 +165,23 @@ export default function PlayerMap({ player1, player2, theme, isLoading }: Player
         )}
       </svg>
 
+      {/* City names + weather */}
+      {(player1City || player2City) && (
+        <div className="text-[10px] text-stone-500 text-center leading-relaxed">
+          {player1City && player2City
+            ? <span>{player1City} vs {player2City}</span>
+            : <span>{player1City || player2City}</span>
+          }
+          {(player1Weather || player2Weather) && (
+            <div className="text-[9px] text-stone-600">
+              {player1Weather && player2Weather
+                ? <span>{player1Weather} vs {player2Weather}</span>
+                : <span>{player1Weather || player2Weather}</span>
+              }
+            </div>
+          )}
+        </div>
+      )}
       {/* Distance label or status */}
       <div className="text-xs text-stone-400 text-center">
         {distance !== null ? (

@@ -40,7 +40,6 @@ export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
   currentTheme = theme;
 
   el.addEventListener('error', () => {
-    console.log('Music failed to load for', theme);
     isPlaying = false;
     currentTheme = null;
   });
