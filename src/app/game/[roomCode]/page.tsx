@@ -252,9 +252,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
         return state;
       });
       setError(null);
-      if (state.roomTheme && (state.roomTheme === 'kingdom' || state.roomTheme === 'pirate' || state.roomTheme === 'greek')) {
-        setThemeId(state.roomTheme as any);
-      }
     });
 
     socket.on('coin_flip', (data: { player1Name: string; player2Name: string; winner: 1 | 2 }) => {
