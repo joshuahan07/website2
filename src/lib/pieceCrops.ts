@@ -21,7 +21,7 @@ export const PIECE_CROPS: Record<string, { scale: number; offsetX: number; offse
   'pirate-crewmate.png': { scale: 1.5, offsetX: 0, offsetY: 1 },
   'pirate-diver.png': { scale: 1.7, offsetX: -7, offsetY: 13 },
   'pirate-parrot.png': { scale: 1.65, offsetX: 0, offsetY: 14 },
-  'pirate-watchman.png': { scale: 1.25, offsetX: -5, offsetY: 8 },
+  'pirate-watchman.png': { scale: 1.25, offsetX: -12, offsetY: 8 },
   'pirate-stowaway.png': { scale: 2.25, offsetX: 0, offsetY: 14 },
   'pirate-sea-mine.png': { scale: 1.25, offsetX: 0, offsetY: 0 },
   'pirate-treasure-chest.png': { scale: 1.35, offsetX: -1, offsetY: 0 },
