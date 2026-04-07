@@ -120,7 +120,9 @@ export default function Lobby({
                 </div>
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Connecting to server...</h2>
-              <p className="text-white/30 text-sm">Waking up the battlefield (may take up to 30 seconds)</p>
+              <p className="text-white/30 text-sm">
+                {error || 'Waking up the battlefield (may take up to 30 seconds)'}
+              </p>
               <div className="w-48 h-1 bg-white/5 rounded-full mx-auto mt-6 overflow-hidden">
                 <div className="h-full bg-blue-500/50 rounded-full" style={{ animation: 'loadBar 2s ease-in-out infinite' }} />
               </div>
@@ -344,7 +346,7 @@ export default function Lobby({
       )}
 
       {/* Error toast */}
-      {error && (
+      {error && !connecting && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-red-950/90 border border-red-500/20 rounded-2xl
           text-red-300 text-sm text-center backdrop-blur-xl shadow-2xl shake">
           {error}
