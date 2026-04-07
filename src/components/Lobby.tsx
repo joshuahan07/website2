@@ -170,7 +170,7 @@ export default function Lobby({
                   <span className="text-2xl">⚔️</span>
                 </div>
                 <h2 className="text-4xl font-black mb-2">Join Game</h2>
-                <p className="text-white/25 text-sm">Enter the 6-character room code</p>
+                <p className="text-white/50 text-sm">Enter the 6-character room code</p>
               </div>
               <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="• • • • • •" maxLength={6}
