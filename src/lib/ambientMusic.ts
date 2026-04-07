@@ -39,12 +39,24 @@ export function startMusic(theme: 'kingdom' | 'pirate' | 'greek') {
   audio = el;
   currentTheme = theme;
 
+  // Greek track: start at 36s and loop from 36s
+  const startTime = theme === 'greek' ? 36 : 0;
+  if (startTime > 0) {
+    el.addEventListener('timeupdate', () => {
+      // When the track loops back to the beginning, skip to startTime
+      if (el.currentTime < startTime - 0.5) {
+        el.currentTime = startTime;
+      }
+    });
+  }
+
   el.addEventListener('error', () => {
     isPlaying = false;
     currentTheme = null;
   });
 
   const doPlay = () => {
+    el.currentTime = startTime;
     el.play().then(() => {
       isPlaying = true;
       pendingTheme = null;
