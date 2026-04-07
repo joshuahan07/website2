@@ -957,11 +957,14 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
     console.log(`> Outrank server ready on http://${hostname}:${port} (${STANDALONE ? 'standalone' : 'with Next.js'})`);
 
     // Keep Render free tier awake 24/7 by self-pinging every 14 minutes
-    if (process.env.RENDER_EXTERNAL_URL) {
+    const renderUrl = process.env.RENDER_EXTERNAL_URL
+      || (process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : null)
+      || (process.env.RENDER ? `http://localhost:${port}` : null);
+    if (renderUrl) {
       setInterval(() => {
-        fetch(process.env.RENDER_EXTERNAL_URL!).catch(() => {});
+        fetch(renderUrl).catch(() => {});
       }, 14 * 60 * 1000);
-      console.log('> Self-ping enabled to prevent Render sleep');
+      console.log(`> Self-ping enabled: ${renderUrl}`);
     }
   });
 }
