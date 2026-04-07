@@ -52,12 +52,13 @@ export default function Home() {
       sessionStorage.setItem('playerNumber', String(data.playerNumber));
       if (data.theme) sessionStorage.setItem('roomTheme', data.theme);
       socket?.disconnect();
-      router.push('/game');
+      router.push(`/game/${data.roomCode}`);
     });
 
     socket.on(S2C.PLAYER_JOINED, () => {
+      const code = sessionStorage.getItem('roomCode');
       socket?.disconnect();
-      router.push('/game');
+      router.push(`/game/${code}`);
     });
 
     socket.on(S2C.ERROR, (data: { message: string }) => {
@@ -75,21 +76,21 @@ export default function Home() {
       socket.emit(event, data);
     } else {
       setConnecting(true);
-      // Wait for connection then emit
+      // Wait for connection then emit — keep the listener alive so it fires
+      // even if the server takes a long time to wake up
       const onConnect = () => {
         socket?.emit(event, data);
         socket?.off('connect', onConnect);
         setConnecting(false);
+        setError(null);
       };
       socket?.on('connect', onConnect);
-      // Timeout after 30s
+      // Show a message after 10s but DON'T remove the listener
       setTimeout(() => {
-        socket?.off('connect', onConnect);
         if (!socket?.connected) {
-          setConnecting(false);
-          setError('Server is waking up. Please try again in a few seconds.');
+          setError('Server is waking up — hang tight, your game will start automatically...');
         }
-      }, 30000);
+      }, 10000);
     }
   }, []);
 

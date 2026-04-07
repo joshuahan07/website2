@@ -13,6 +13,14 @@ import {
 import { C2S, S2C } from './src/lib/socketEvents';
 import { botPlacePieces, botChooseMove, botSpotterPredict } from './src/lib/botLogic';
 
+// Prevent server crashes from killing all active games
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception (server still running):', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection (server still running):', err);
+});
+
 const STANDALONE = process.env.STANDALONE === 'true';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
@@ -100,6 +108,7 @@ function sendGameState(io: SocketIOServer, game: GameState) {
 // ── Bot move execution ──────────────────────────────────
 
 function executeBotTurn(io: SocketIOServer, roomCode: string) {
+  try {
   const game = games.get(roomCode);
   if (!game || game.phase !== 'playing') return;
   if (game.currentTurn !== 2) return; // bot is always player 2
@@ -122,8 +131,11 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
 
   const result = executeMove(game, move.from, move.to, 2);
   if (!result.success) {
-    // Shouldn't happen, but retry with a different move
-    console.error(`Bot move failed in room ${roomCode}, skipping`);
+    // Bot move failed — switch turn back to human so game doesn't freeze
+    console.error(`Bot move failed in room ${roomCode}, giving turn to human`);
+    game.currentTurn = 1;
+    sendGameState(io, game);
+    startTurnTimer(io, game, roomCode);
     return;
   }
 
@@ -265,6 +277,15 @@ function executeBotTurn(io: SocketIOServer, roomCode: string) {
   if (!result.gameOver) {
     startTurnTimer(io, game, roomCode);
   }
+  } catch (err) {
+    console.error(`Bot turn error in room ${roomCode}:`, err);
+    // Recover: give turn back to human so the game doesn't freeze
+    const game = games.get(roomCode);
+    if (game && game.phase === 'playing') {
+      game.currentTurn = 1;
+      sendGameState(io, game);
+    }
+  }
 }
 
 // ── Start server ─────────────────────────────────────────
@@ -353,7 +374,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       game.setupPieces[2] = botPieces;
       game.players[1].ready = true;
 
-      socket.emit(S2C.ROOM_JOINED, { roomCode, playerNumber: 1 });
+      socket.emit(S2C.ROOM_JOINED, { roomCode, playerNumber: 1, theme: game.roomTheme });
       socket.emit(S2C.OPPONENT_READY);
       sendGameState(io, game);
       console.log(`Bot game ${roomCode} created by ${socket.id}`);
@@ -550,6 +571,7 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
     // ── MAKE MOVE ────────────────────────────────────────
 
     socket.on(C2S.MAKE_MOVE, (data: { from: Square; to: Square }) => {
+      try {
       const roomCode = socketToRoom.get(socket.id);
       if (!roomCode) return;
       const game = games.get(roomCode);
@@ -651,6 +673,10 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       if (!result.gameOver && !result.spotterPrompt) {
         const timerDelay = result.reveal ? 1500 + result.reveal.duration + 500 : 0;
         setTimeout(() => startTurnTimer(io, game, roomCode), timerDelay);
+      }
+      } catch (err) {
+        console.error('MAKE_MOVE error:', err);
+        socket.emit(S2C.ERROR, { message: 'Server error processing move' });
       }
     });
 
@@ -813,6 +839,14 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       const game = games.get(roomCode);
       if (!game) return;
 
+      // Clear any pending timers from the old game
+      const oldSpotterTimer = spotterTimeouts.get(roomCode);
+      if (oldSpotterTimer) { clearTimeout(oldSpotterTimer); spotterTimeouts.delete(roomCode); }
+      const oldTurnTimer = turnTimers.get(roomCode);
+      if (oldTurnTimer) { clearTimeout(oldTurnTimer); turnTimers.delete(roomCode); }
+      game.awaitingSpotter = false;
+      game.turnDeadline = undefined;
+
       // Reset game
       game.phase = 'setup';
       game.board = createEmptyBoard();
@@ -853,6 +887,16 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
       player.connected = false;
       player.disconnectedAt = Date.now();
 
+      // Clear spotter timeout if the disconnecting player was mid-spotter
+      if (game.awaitingSpotter && game.currentTurn === player.number) {
+        const st = spotterTimeouts.get(roomCode);
+        if (st) { clearTimeout(st); spotterTimeouts.delete(roomCode); }
+        game.awaitingSpotter = false;
+        // Switch turn so the opponent isn't stuck waiting
+        game.currentTurn = player.number === 1 ? 2 : 1;
+        sendGameState(io, game);
+      }
+
       // Bot games: clean up after 5 min
       if (botGames.has(roomCode)) {
         const botTimer = setTimeout(() => {
@@ -860,6 +904,10 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
             games.delete(roomCode);
             botGames.delete(roomCode);
             botLastMoved.delete(roomCode);
+            const bst = spotterTimeouts.get(roomCode);
+            if (bst) { clearTimeout(bst); spotterTimeouts.delete(roomCode); }
+            const btt = turnTimers.get(roomCode);
+            if (btt) { clearTimeout(btt); turnTimers.delete(roomCode); }
             console.log(`Bot game ${roomCode} deleted (player disconnected)`);
           }
           disconnectTimers.delete(socket.id);
@@ -890,6 +938,10 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
           // Clean up if both disconnected
           if (game.players.every(p => !p.connected)) {
             games.delete(roomCode);
+            const cst = spotterTimeouts.get(roomCode);
+            if (cst) { clearTimeout(cst); spotterTimeouts.delete(roomCode); }
+            const ctt = turnTimers.get(roomCode);
+            if (ctt) { clearTimeout(ctt); turnTimers.delete(roomCode); }
             console.log(`Room ${roomCode} deleted (all disconnected)`);
           }
         }
@@ -903,6 +955,14 @@ function startServer(handler?: (req: any, res: any, parsedUrl: any) => void) {
 
   server.listen(port, hostname, () => {
     console.log(`> Outrank server ready on http://${hostname}:${port} (${STANDALONE ? 'standalone' : 'with Next.js'})`);
+
+    // Keep Render free tier awake 24/7 by self-pinging every 14 minutes
+    if (process.env.RENDER_EXTERNAL_URL) {
+      setInterval(() => {
+        fetch(process.env.RENDER_EXTERNAL_URL!).catch(() => {});
+      }, 14 * 60 * 1000);
+      console.log('> Self-ping enabled to prevent Render sleep');
+    }
   });
 }
 
