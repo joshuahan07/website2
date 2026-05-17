@@ -1,0 +1,1 @@
+- [User role](user_role.md) — Student submitting Outrank board game project for rubric evaluation

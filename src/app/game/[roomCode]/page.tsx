@@ -24,13 +24,9 @@ import Tutorial from '@/components/Tutorial';
 import LoadingScreen from '@/components/LoadingScreen';
 import { SFX, setSfxMuted } from '@/lib/sounds';
 import { startMusic, stopMusic, setMusicVolume } from '@/lib/ambientMusic';
-import NarrationPlayer, { NarrationPlayerHandle } from '@/components/api/NarrationPlayer';
 import VoiceCommander from '@/components/api/VoiceCommander';
 import NotificationManager from '@/components/api/NotificationManager';
-import PlayerMap from '@/components/api/PlayerMap';
-import { PlayerCoords, GameCommand } from '@/types/api';
-import useGeolocation from '@/hooks/useGeolocation';
-import { reverseGeocode, fetchWeather } from '@/lib/apis/geolocation';
+import { GameCommand } from '@/types/api';
 
 let socket: Socket | null = null;
 
@@ -99,21 +95,12 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
   const [copied, setCopied] = useState(false);
   const [coinFlip, setCoinFlip] = useState<{ player1Name: string; player2Name: string; winner: 1 | 2 } | null>(null);
   const [opponentMove, setOpponentMove] = useState<{ from: Square; to: Square } | null>(null);
-  const [opponentCoords, setOpponentCoords] = useState<PlayerCoords | null>(null);
-  const [myCity, setMyCity] = useState<string | null>(null);
-  const [opponentCity, setOpponentCity] = useState<string | null>(null);
-  const [myWeather, setMyWeather] = useState<string | null>(null);
-  const [opponentWeather, setOpponentWeather] = useState<string | null>(null);
-  const [narrationMuted, setNarrationMuted] = useState(false);
+  const [sfxMuted, setSfxMutedState] = useState(false);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [showRevealedBoard, setShowRevealedBoard] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialShownRef = useRef(false);
   const gameStartTimeRef = useRef<number>(0);
-
-  // API refs
-  const narrationRef = useRef<NarrationPlayerHandle>(null);
-  const { latitude, longitude, isLoading: geoLoading, error: geoError } = useGeolocation();
 
   // Setup state
   const [setupPieces, setSetupPieces] = useState<PlacedPiece[]>([]);
@@ -287,28 +274,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
         setRevealingSquares(squares);
         setRevealEvent(event);
         revealSetAtRef.current = Date.now();
-        SFX.combat();
-
-        // Trigger narration for the event
-        if (event.result) {
-          const winner = event.result.winner;
-          if (event.type === 'spy_kills_marshal') {
-            narrationRef.current?.narrate('spy_kills_marshal', { winnerPiece: theme.pieceNames['0'], loserPiece: theme.pieceNames['10'] });
-          } else if (event.type === 'miner_defuses_bomb') {
-            narrationRef.current?.narrate('miner_defuses_bomb', { winnerPiece: theme.pieceNames['3'] });
-          } else if (winner === 'flag_captured') {
-            narrationRef.current?.narrate('flag_captured');
-          } else if (winner === 'both_destroyed') {
-            narrationRef.current?.narrate('equal_rank');
-          } else if (winner === 'attacker') {
-            narrationRef.current?.narrate('combat_kill', { winnerPiece: theme.pieceNames[event.result.attacker.rank], loserPiece: theme.pieceNames[event.result.defender.rank] });
-          } else if (winner === 'defender') {
-            narrationRef.current?.narrate('combat_kill', { winnerPiece: theme.pieceNames[event.result.defender.rank], loserPiece: theme.pieceNames[event.result.attacker.rank] });
-          }
-        }
-        if (event.spotterResult) {
-          narrationRef.current?.narrate(event.spotterResult.correct ? 'spotter_correct' : 'spotter_wrong');
-        }
       }, showDelay);
 
       revealTimerRef.current = setTimeout(() => {
@@ -360,11 +325,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
       }
     });
 
-    // Geolocation relay - receive opponent's location
-    socket.on(S2C.PLAYER_LOCATION, (data: { latitude: number; longitude: number }) => {
-      setOpponentCoords({ latitude: data.latitude, longitude: data.longitude });
-    });
-
     return () => {
       socket?.disconnect();
       if (connectTimeout) { clearTimeout(connectTimeout); connectTimeout = null; }
@@ -381,37 +341,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
       startMusic(theme.id as 'kingdom' | 'pirate' | 'greek');
     }
   }, [theme.id, musicPlaying]);
-
-  // Send own location when available
-  useEffect(() => {
-    if (latitude && longitude && socket?.connected) {
-      socket.emit(C2S.PLAYER_LOCATION, { latitude, longitude });
-    }
-  }, [latitude, longitude]);
-
-  // Reverse geocode + fetch weather for own coordinates
-  useEffect(() => {
-    if (latitude && longitude) {
-      reverseGeocode(latitude, longitude).then(city => {
-        if (city) setMyCity(city);
-      });
-      fetchWeather(latitude, longitude).then(w => {
-        if (w) setMyWeather(`${w.temp}°F${w.description ? ', ' + w.description : ''}`);
-      });
-    }
-  }, [latitude, longitude]);
-
-  // Reverse geocode + fetch weather for opponent coordinates
-  useEffect(() => {
-    if (opponentCoords) {
-      reverseGeocode(opponentCoords.latitude, opponentCoords.longitude).then(city => {
-        if (city) setOpponentCity(city);
-      });
-      fetchWeather(opponentCoords.latitude, opponentCoords.longitude).then(w => {
-        if (w) setOpponentWeather(`${w.temp}°F${w.description ? ', ' + w.description : ''}`);
-      });
-    }
-  }, [opponentCoords]);
 
   // Handle square clicks during PLAYING phase
   const handleBoardClick = useCallback((row: number, col: number) => {
@@ -540,7 +469,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
       // Try to move
       const isValid = validMoves.some(m => m.row === row && m.col === col);
       if (isValid) {
-        SFX.move();
         socket?.emit(C2S.MAKE_MOVE, {
           from: selectedSquare,
           to: { row, col },
@@ -710,15 +638,14 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
           </button>
           <button
             onClick={() => {
-              const newMuted = !narrationMuted;
-              narrationRef.current?.toggleMute();
+              const newMuted = !sfxMuted;
               setSfxMuted(newMuted);
-              setNarrationMuted(newMuted);
+              setSfxMutedState(newMuted);
             }}
             className="text-xs bg-stone-800 px-2 py-1 rounded hover:bg-stone-700 transition-all cursor-pointer"
-            title={narrationMuted ? 'Unmute sounds' : 'Mute sounds'}
+            title={sfxMuted ? 'Unmute sound effects' : 'Mute sound effects'}
           >
-            {narrationMuted ? '🔇' : '🔊'}
+            {sfxMuted ? '🔇' : '🔊'}
           </button>
           <button
             onClick={() => {
@@ -938,8 +865,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
         }} />
       )}
 
-      {/* API Components */}
-      <NarrationPlayer ref={narrationRef} theme={theme.id} />
       <NotificationManager
         theme={theme.id}
         gameState={gameState ? {
@@ -951,22 +876,6 @@ export default function GamePage({ params }: { params: { roomCode: string } }) {
         } : null}
       />
       <VoiceCommander theme={theme.id} onCommand={handleVoiceCommand} />
-
-      {/* Player Map - always show during playing */}
-      {gameState.phase === 'playing' && (
-        <div className="fixed bottom-24 right-4 z-30">
-          <PlayerMap
-            player1={latitude && longitude ? { latitude, longitude } : null}
-            player2={opponentCoords}
-            theme={theme.id}
-            isLoading={geoLoading}
-            player1City={myCity}
-            player2City={opponentCity}
-            player1Weather={myWeather}
-            player2Weather={opponentWeather}
-          />
-        </div>
-      )}
 
       {gameState.phase === 'gameover' && gameState.winner && (
         <GameOverModal
